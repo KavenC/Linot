@@ -9,7 +9,7 @@ TwitchNotifier let user subscribe twitch channels. When the subscribed channels 
 * Example<br>
     `User> twtich -subscribe Nightblue3`<br>
     `Linot> Done.`<br>
-    (When Nightblues3 goes live)<br>
+    (When Nightblue3 goes live)<br>
     `Linot>`<br>
     `Nightblue3 is now streamming!!`<br>
     `[Title] ASSASSIN/SATED JUNGLE META`<br>
