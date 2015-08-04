@@ -165,15 +165,16 @@ class Plugin(PluginBase):
         # Handles user request for unsubscribing channels
         not_found = []
         for ch in chs:
+            self._sublist_lock.acquire(True)
             try:
-                self._sublist_lock.acquire(True)
                 self._sublist[sender.id].remove(ch)
-                self._sublist_lock.release()
-                self._channel_sub_count[ch] -= 1
-                pickle.dump(self._sublist, open(self.SUB_FILE, 'wb+'))
             except ValueError:
                 not_found.append(ch)
+                self._sublist_lock.release()
                 continue
+            self._sublist_lock.release()
+            self._channel_sub_count[ch] -= 1
+            pickle.dump(self._sublist, open(self.SUB_FILE, 'wb+'))
             if self._channel_sub_count[ch] <= 0:
                 self._twitch.unfollowChannel(ch)
                 self._channel_sub_count.pop(ch, None)
