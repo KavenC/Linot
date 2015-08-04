@@ -1,0 +1,119 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+from __future__ import print_function
+import json
+import requests
+from linot.LinotConfig import LinotConfig as Config
+import sys
+
+
+class TwitchRequests:
+    TWITCH_API_BASE = 'https://api.twitch.tv/kraken/'
+    OAUTH_TOKEN = Config['twitch_oauth']
+    DEBUG = False
+    IGNORE_STATUS = [
+        204,
+        422
+    ]
+
+    @classmethod
+    def _twitchProcess(cls, action, url, pms, **kwargs):
+        twitch_api_url = cls.TWITCH_API_BASE + url
+        if pms is None:
+            pms_a = {}
+        else:
+            pms_a = pms
+        pms_a['oauth_token'] = cls.OAUTH_TOKEN
+        if cls.DEBUG is True:
+            print("[TR] Action = " + str(action.__name__), file=sys.stderr)
+            print("[TR] ProcUrl = " + str(twitch_api_url), file=sys.stderr)
+            # print("[TR] ProcParas = " + str(pms_a), file=sys.stderr)
+        ret = action(twitch_api_url, params=pms_a, **kwargs)
+        if ret.status_code not in cls.IGNORE_STATUS:
+            return ret.json()
+        else:
+            return {}
+
+    @classmethod
+    def get(cls, url, params=None, **kwargs):
+        return cls._twitchProcess(requests.get, url, params, **kwargs)
+
+    @classmethod
+    def multiGet(cls, url, params=None, per=25, **kwargs):
+        if params is None:
+            params = {
+                'limit': per,
+                'offset': 0
+            }
+        else:
+            params['limit'] = per
+            params['offset'] = 0
+        json_streams = cls.get(url, params=params, **kwargs)
+        resp_list = [json_streams]
+        if '_total' in json_streams:
+            total = json_streams['_total']
+            for offset in range(per, total, per):
+                params['offset'] = offset
+                params['limit'] = offset + per
+                json_streams = cls.get(url, params=params, **kwargs)
+                resp_list.append(json_streams)
+        return resp_list
+
+    @classmethod
+    def put(cls, url, params=None, **kwargs):
+        return cls._twitchProcess(requests.put, url, params, **kwargs)
+
+    @classmethod
+    def delete(cls, url, params=None, **kwargs):
+        return cls._twitchProcess(requests.delete, url, params, **kwargs)
+
+    @classmethod
+    def post(cls, url, params=None, **kwargs):
+        return cls._twitchProcess(requests.post, url, params, **kwargs)
+
+
+def JSONPrint(dic):
+    print(json.dumps(dic, indent=2, separators=(',', ':')), file=sys.stderr)
+
+
+class TwitchEngine:
+
+    USER = Config['twitch_user']
+
+    def getChannels(self):
+        # TODO process multi-page response
+        json_channels = TwitchRequests.get('/users/' + self.USER + '/follows/channels')
+        channel_names = []
+        for followed_channel in json_channels['follows']:
+            channel_names.append(followed_channel['channel']['display_name'])
+        return channel_names
+
+    def getLiveChannels(self):
+        live_channel_json = TwitchRequests.multiGet('/streams/followed')
+        ret_live_channels = {}
+        for json_streams in live_channel_json:
+            for stream in json_streams['streams']:
+                name = stream['channel']['display_name']
+                ret_live_channels[name] = stream['channel']
+        return ret_live_channels
+
+    def followChannel(self, channel_name):
+        json_streams = TwitchRequests.put(
+            '/users/'+self.USER+'/follows/channels/'+channel_name)
+        if 'channel' not in json_streams:
+            return channel_name, False
+        else:
+            return json_streams['channel']['display_name'], True
+
+    def unfollowChannel(self, channel_name):
+        json_streams = TwitchRequests.delete(
+            '/users/'+self.USER+'/follows/channels/'+channel_name)
+        if 'channel' not in json_streams:
+            return False
+        else:
+            return True
+
+
+if __name__ == '__main__':
+    eng = TwitchEngine()
+    eng.followChannels('kaydada')
