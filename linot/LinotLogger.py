@@ -15,14 +15,16 @@ config = {
             'level': logging.DEBUG,
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'linot.log',
-            'maxBytes': 256 * 1024,
+            'maxBytes': 32 * 1024,
             'backupCount': 2,
             'formatter': 'verbose',
+            'mode': 'w+',
         },
     },
     'formatters': {
         'verbose': {
-            'format': '%(asctime)s|[%(levelname)s][%(name)s] %(message)s',
+            'format': '%(asctime)s|[%(levelname)s][%(name)s]: %(message)s',
+            'datefmt': '%Y-%m-%d|%H:%M:%S',
         },
     },
     'loggers': {

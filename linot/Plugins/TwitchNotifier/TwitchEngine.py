@@ -5,12 +5,13 @@ import json
 import requests
 from linot.LinotConfig import LinotConfig as Config
 import sys
+from linot.LinotLogger import logging
+logger = logging.getLogger(__name__)
 
 
 class TwitchRequests:
     TWITCH_API_BASE = 'https://api.twitch.tv/kraken/'
     OAUTH_TOKEN = Config['twitch_oauth']
-    DEBUG = False
     IGNORE_STATUS = [
         204,
         422
@@ -24,11 +25,9 @@ class TwitchRequests:
         else:
             pms_a = pms
         pms_a['oauth_token'] = cls.OAUTH_TOKEN
-        if cls.DEBUG is True:
-            print("[TR] Action = " + str(action.__name__), file=sys.stderr)
-            print("[TR] ProcUrl = " + str(twitch_api_url), file=sys.stderr)
-            # print("[TR] ProcParas = " + str(pms_a), file=sys.stderr)
+        logger.debug('[{}] Url = {}'.format(str(action.__name__), str(twitch_api_url)))
         ret = action(twitch_api_url, params=pms_a, **kwargs)
+        logger.debug('Return Code = {}'.format(ret.status_code))
         if ret.status_code not in cls.IGNORE_STATUS:
             return ret.json()
         else:
