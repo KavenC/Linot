@@ -209,4 +209,5 @@ class Plugin(PluginBase):
                 print('> ', end='')
                 for ch in self._sublist[user]:
                     print(ch, end=', ')
+        print('Done')
         return
