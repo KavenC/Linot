@@ -1,7 +1,7 @@
 # Linot
 Linot is a chat bot for [LINE](http://line.me/)&trade; App. It provides services to user through the LINE message interfaces. 
 
-It is currently demo on LineID: **LinotBot**
+It is currently demo on LineID: **Linot_Bot**
 
 ## Services
 ###  TwitchNotifier
