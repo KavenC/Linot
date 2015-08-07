@@ -204,7 +204,7 @@ class Plugin(PluginBase):
         # <Admin only>
         if sender.id == Config['admin_id']:
             for user in self._sublist:
-                contact = self._line.getContactById(sender.id)
+                contact = self._line.getContactById(user)
                 print(contact.name)
                 print('Channels: ', end='')
                 for ch in self._sublist[user]:
