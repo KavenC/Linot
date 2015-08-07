@@ -174,11 +174,15 @@ class Plugin(PluginBase):
                 continue
             self._sublist_lock.release()
             self._channel_sub_count[ch] -= 1
-            pickle.dump(self._sublist, open(self.SUB_FILE, 'wb+'))
             if self._channel_sub_count[ch] <= 0:
                 self._twitch.unfollowChannel(ch)
                 self._channel_sub_count.pop(ch, None)
+        if len(self._sublist[sender.id]) == 0:
+            self._sublist_lock.acquire(True)
+            self._sublist.pop(sender.id)
+            self._sublist_lock.release()
 
+        pickle.dump(self._sublist, open(self.SUB_FILE, 'wb+'))
         if len(not_found) > 0:
             print('Channel not found: '+' '.join(not_found))
         print('Done')
