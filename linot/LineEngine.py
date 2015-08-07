@@ -1,5 +1,7 @@
 from __future__ import print_function
 from line import LineClient
+from line import LineContact
+from curve.ttypes import TalkException
 from LinotConfig import LinotConfig as Config
 from threading import Lock
 from linot.LinotLogger import logging
@@ -19,6 +21,14 @@ class LineClientP(LineClient):
         self.certificate = f.read()
         f.close()
         return
+
+    def findContactById(self, userid):
+        try:
+            contacts = self._getContacts([userid])
+        except TalkException as e:
+            self.raise_error(e.reason)
+
+        return LineContact(self, contacts[0])
 
 
 class LineEngine:
@@ -47,7 +57,10 @@ class LineEngine:
         return op_list
 
     def getContactById(self, id):
-        return self._client.getContactById(id)
+        self._client.lock.acquire(True)
+        contact = self._client.findContactById(id)
+        self._client.lock.release()
+        return contact
 
     def sendMessageToClient(self, recvr_client, msg):
         self._client.lock.acquire(True)
@@ -55,7 +68,7 @@ class LineEngine:
         self._client.lock.release()
 
     def sendMessageToId(self, recvr_id, msg):
+        recvr = self.getContactById(recvr_id)
         self._client.lock.acquire(True)
-        recvr = self._client.getContactById(recvr_id)
         recvr.sendMessage(msg)
         self._client.lock.release()
