@@ -1,7 +1,6 @@
 from __future__ import print_function
 from line import LineClient
 from line import LineContact
-from curve.ttypes import TalkException
 from LinotConfig import LinotConfig as Config
 from threading import Lock
 from linot.LinotLogger import logging
@@ -23,11 +22,9 @@ class LineClientP(LineClient):
         return
 
     def findContactById(self, userid):
-        try:
-            contacts = self._getContacts([userid])
-        except TalkException as e:
-            self.raise_error(e.reason)
-
+        contacts = self._getContacts([userid])
+        if len(contacts) == 0:
+            raise Exception('getContacts from server failed, id:'+str(userid))
         return LineContact(self, contacts[0])
 
 
