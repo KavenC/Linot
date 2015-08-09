@@ -8,7 +8,7 @@ config = {
         'console': {
             'level': logging.DEBUG,
             'class': 'logging.StreamHandler',
-            'stream': sys.stderr,
+            'stream': sys.stdout,
             'formatter': 'verbose',
         },
         'file': {
