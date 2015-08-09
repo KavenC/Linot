@@ -24,7 +24,7 @@ class Checker(Thread):
 
     def run(self):
         self._stop.clear()
-        logger.info('Twitch Checker thread started')
+        logger.info('Twitch Checker is started')
         # Skip 1st notify if channels are already live before plugin load
         self._setLiveChannels(self._twitch.getLiveChannels())
         while(True):
@@ -60,7 +60,7 @@ class Checker(Thread):
             self._setLiveChannels(local_live_channels)
 
         # TODO thread stop process
-        logger.info('Twitch Checker thread stopped')
+        logger.info('Twitch Checker is stopped')
 
     def _setLiveChannels(self, ch_list):
         self._status_lock.acquire(True)
@@ -80,6 +80,7 @@ class Checker(Thread):
     def stop(self):
         self._polling.set()
         self._stop.set()
+        # TODO: wait until thread is really stopped
 
     def stopped(self):
         return self._stop.isSet()
@@ -157,8 +158,9 @@ class Plugin(PluginBase):
                 pickle.dump(self._sublist, open(self.SUB_FILE, 'wb+'))
 
         if len(not_found) > 0:
-            print('Channel not found: '+' '.join(not_found))
-        print('Done')
+            self._line.sendMessageToClient(
+                sender, 'Channel not found: '+' '.join(not_found))
+        self._line.sendMessageToClient(sender, 'Done')
         return
 
     def _unsubscribe(self, chs, sender):
@@ -184,35 +186,40 @@ class Plugin(PluginBase):
 
         pickle.dump(self._sublist, open(self.SUB_FILE, 'wb+'))
         if len(not_found) > 0:
-            print('Channel not found: '+' '.join(not_found))
-        print('Done')
+            self._line.sendMessageToClient(
+                sender, 'Channel not found: '+' '.join(not_found))
+        self._line.sendMessageToClient(sender, 'Done')
         return
 
     def _listChannel(self, value, sender):
-        print('Your subscribed channels:')
+        msg = 'Your subscribed channels:\n'
         live_channels = self._check_thread.getLiveChannels()
         for ch in self._sublist[sender.id]:
             if ch in live_channels:
                 stat = '[LIVE]'
             else:
                 stat = '[OFF]'
-            print('{}\t{}'.format(stat, ch))
+            msg += '{}\t{}'.format(stat, ch) + '\n'
+        self._line.sendMessageToClient(sender, msg)
 
     def _refresh(self, value, sender):
+        # <Admin only>
         if sender.id == Config['admin_id']:
             self._check_thread.refresh()
-            print('Done')
+            self._line.sendMessageToClient(sender, 'Done')
 
     def _listUsers(self, args, sender):
         # List all user who has subscription
         # <Admin only>
         if sender.id == Config['admin_id']:
+            msg = ''
             for user in self._sublist:
                 contact = self._line.getContactById(user)
-                print(contact.name)
-                print('Channels: ', end='')
+                msg += contact.name + '\n'
+                msg += 'Channels: '
                 for ch in self._sublist[user]:
-                    print(ch, end=', ')
-                print('\n--------------------')
-        print('Done')
+                    msg += ch + ', '
+                msg += '\n--------------------\n'
+            self._line.sendMessageToClient(sender, msg)
+            self._line.sendMessageToClient(sender, 'Done')
         return

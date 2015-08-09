@@ -45,6 +45,11 @@ class LinotArgParser:
                     func(getattr(input_args, args), sender)
                 else:
                     self._default_process(input_args, sender)
+                return  # we assume that there will be only 1 argument each time
+
+        # this call indicates that there are no known arguments
+        # default process can handle this by determine if args is None
+        self._default_process(None, sender)
 
     def print_help(self, args, sender=None):
         print('[{} command list]'.format(self._subcmd))

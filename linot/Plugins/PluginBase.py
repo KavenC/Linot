@@ -41,4 +41,7 @@ class PluginBase:
 
     def _cmdProcess(self, args, sender):
         # process argument input
-        print('Unknown command')
+        if args is None:
+            # no known arguments
+            self._line.sendMessageToClient(sender, 'Unknown commands.')
+        self._line.sendMessageToClient(sender, 'Command is not implemented yet')
