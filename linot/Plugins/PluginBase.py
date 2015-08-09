@@ -10,7 +10,7 @@ class PluginBase:
         self._line = line
 
     def setup(self, sub_parser):
-        ap = LinotArgParser(self.CMD_PREFIX, sub_parser, self._cmdProcess)
+        ap = LinotArgParser(self.CMD_PREFIX, sub_parser, self._cmdProcess, self._line)
         self._setup_argument(ap)
 
     def isStart(self):

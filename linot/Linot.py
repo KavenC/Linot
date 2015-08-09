@@ -27,18 +27,19 @@ def CmdProcess(args, sender):
             line_eng.sendMessageToClient(sender, PluginInstance[plugin].CMD_PREFIX)
         return
 
+# LINE chat bot start-up
+line_eng = LineEngine.LineEngine()
+
 # Add common commands
 parser = argparse.ArgumentParser(usage=argparse.SUPPRESS, add_help=False)
 sub_cmd_parser = parser.add_subparsers()
-cmd_group = LinotArgParser('linot', sub_cmd_parser, CmdProcess)
+cmd_group = LinotArgParser('linot', sub_cmd_parser, CmdProcess, line_eng)
 cmd_group.add_argument('-stopserver', action='store_true', help=argparse.SUPPRESS)
 # cmd_group.add_argument('-backup', action='store_true', help=argparse.SUPPRESS)
 # cmd_group.add_argument('-listbackups', action='store_true', help=argparse.SUPPRESS)
 # cmd_group.add_argument('-restore', help=argparse.SUPPRESS)
 cmd_group.add_argument('-listservices', action='store_true', help='Show installed services')
 
-# LINE chat bot start-up
-line_eng = LineEngine.LineEngine()
 line_cmd_server = LineCmdServer.LineCmdServer(line_eng, parser)
 line_cmd_server.start()
 
