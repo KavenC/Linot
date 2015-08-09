@@ -5,16 +5,18 @@ Linot is a chat bot for [LINE](http://line.me/)&trade; App. It provides services
 ###  TwitchNotifier
 TwitchNotifier let user subscribe twitch channels. When the subscribed channels goes live, Linot sends a LINE message to the subscribers with the channel infomation.
 * Example<br>
-    `User> twtich -subscribe Nightblue3`<br>
-    `Linot> Done.`<br>
-    (When Nightblue3 goes live)<br>
-    `Linot>`<br>
-    `Nightblue3 is now streamming!!`<br>
-    `[Title] ASSASSIN/SATED JUNGLE META`<br>
-    `[Playing] League of Legends`<br>
-    `http://www.twitch.tv/nightblue3`<br>
+```
+User> twitch -subscribe Nightblue3
+Linot> Done.
+(When Nightblue3 goes live)
+Linot>
+Nightblue3 is now streamming!!
+[Title] ASSASSIN/SATED JUNGLE META
+[Playing] League of Legends
+http://www.twitch.tv/nightblue3
+```
 * Command List<br>
-    `User> twitch -h`
+`User> twitch -h`
 
 ## Installation & Run
 1. This bot is run under **Python2.7**. You will also need [LINE API](http://carpedm20.github.io/line/) package. 
@@ -24,3 +26,7 @@ TwitchNotifier let user subscribe twitch channels. When the subscribed channels 
   - If you are going to load TwitchNotifier, you need to provide a oauth key to a twitch account.
 4. To run the bot: `python run.py`
 * You may need to enter the pompt code to the LINE app in your cellphone to complete the authentication process.
+
+## Run Tests
+1. We use nose to write test cases, make sure you have nose installed. ex: `pip install nose`
+2. Run test cases by: `nosetests -c nose.cfg`
