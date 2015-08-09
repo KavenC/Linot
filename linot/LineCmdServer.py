@@ -1,8 +1,6 @@
 from __future__ import print_function
 from threading import Thread, Event
 import random
-import sys
-import StringIO
 from linot.LinotLogger import logging
 logger = logging.getLogger(__name__)
 
@@ -12,6 +10,7 @@ class LineCmdServer(Thread):
 
     def __init__(self, client, cmd_parser):
         super(LineCmdServer, self).__init__()
+        self._stopped = True
         self._stop = Event()
         self._client = client
         self._cmd_parser = cmd_parser
@@ -19,8 +18,9 @@ class LineCmdServer(Thread):
 
     def run(self):
         self._stop.clear()
+        self._stopped = False
         logger.info('thread start')
-        while(True):
+        while(not self._stop.is_set()):
             op_list = self._client.longPoll()
             for op in op_list:
                 logger.debug('get line op: '+str(op))
@@ -32,19 +32,19 @@ class LineCmdServer(Thread):
                     logger.debug('get cmd: '+str(cmd_list))
                     args, unknown_args = self._cmd_parser.parse_known_args(cmd_list)
                     if len(unknown_args) > 0:
-                        logger.debug('unknown args: ' + str(unknown_args))
+                        logger.debug('unknown args: ' + str(unknown_args))  #pragma: no cover
                     args.proc(args, sender)
                 except SystemExit as e:
                     if e.code == 2:
                         logger.debug('no known args found.')
                         self._client.sendMessageToClient(sender, 'Unknown commands.')
                     else:
-                        logger.exception('Unexpected SystemExit')
+                        logger.exception('Unexpected SystemExit')  # pragma: no cover
 
-            if self._stop.wait(random.randint(0, self.MAX_RESP_TIME)):
-                break
+            self._stop.wait(random.randint(0, self.MAX_RESP_TIME))
 
         # TODO thread stop process
+        self._stopped = True
         logger.info('Thread stop')
 
     def stop(self):
@@ -52,4 +52,4 @@ class LineCmdServer(Thread):
         self._stop.set()
 
     def stopped(self):
-        return self._stop.isSet()
+        return self._stopped
