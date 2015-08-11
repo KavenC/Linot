@@ -27,7 +27,7 @@ class Checker(Thread):
         logger.info('Twitch Checker is started')
         # Skip 1st notify if channels are already live before plugin load
         self._setLiveChannels(self._twitch.getLiveChannels())
-        while(True):
+        while(not self._stop.is_set()):
             logger.debug('Wait polling {} sec.'.format(self._period))
             self._polling.wait(self._period)
             logger.debug('Polling event is triggered.')
@@ -152,7 +152,8 @@ class Plugin(PluginBase):
                 not_found.append(ch)
             else:
                 self._sublist_lock.acquire(True)
-                self._sublist[sender.id].append(ch_disp_name)
+                if ch_disp_name not in self._sublist[sender.id]:  # TODO fix this
+                    self._sublist[sender.id].append(ch_disp_name)
                 self._sublist_lock.release()
                 self._channel_sub_count[ch_disp_name] += 1
                 pickle.dump(self._sublist, open(self.SUB_FILE, 'wb+'))
