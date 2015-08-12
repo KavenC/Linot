@@ -16,7 +16,9 @@ Nightblue3 is now streamming!!
 http://www.twitch.tv/nightblue3
 ```
 * Command List<br>
-`User> twitch -h`
+```
+User> twitch -h
+```
 
 ## Installation & Run
 1. This bot is run under **Python2.7**. You will also need [LINE API](http://carpedm20.github.io/line/) package. 
