@@ -9,12 +9,13 @@ from linot.LinotLogger import logging
 logger = logging.getLogger(__name__)
 
 
-class TwitchRequests:
+class TwitchRequests:  # pragma: no cover
     TWITCH_API_BASE = 'https://api.twitch.tv/kraken/'
     OAUTH_TOKEN = Config['twitch_oauth']
     IGNORE_STATUS = [
         204,
-        422
+        422,
+        404
     ]
 
     @classmethod
@@ -31,7 +32,7 @@ class TwitchRequests:
         if ret.status_code not in cls.IGNORE_STATUS:
             return ret.json()
         else:
-            return {}
+            return {'code': ret.status_code}
 
     @classmethod
     def get(cls, url, params=None, **kwargs):
@@ -71,7 +72,7 @@ class TwitchRequests:
         return cls._twitchProcess(requests.post, url, params, **kwargs)
 
 
-def JSONPrint(dic):
+def JSONPrint(dic):  # pragma: no cover
     print(json.dumps(dic, indent=2, separators=(',', ':')), file=sys.stderr)
 
 
@@ -80,12 +81,13 @@ class TwitchEngine:
     USER = Config['twitch_user']
 
     def getChannels(self):
-        # TODO process multi-page response
-        json_channels = TwitchRequests.get('/users/' + self.USER + '/follows/channels')
-        channel_names = []
-        for followed_channel in json_channels['follows']:
-            channel_names.append(followed_channel['channel']['display_name'])
-        return channel_names
+        json_channels_list = TwitchRequests.multiGet('/users/' + self.USER + '/follows/channels')
+        channels = {}
+        for json_channels in json_channels_list:
+            for followed_channel in json_channels['follows']:
+                name = followed_channel['channel']['display_name']
+                channels[name] = followed_channel['channel']
+        return channels
 
     def getLiveChannels(self):
         live_channel_json = TwitchRequests.multiGet('/streams/followed')
@@ -107,12 +109,7 @@ class TwitchEngine:
     def unfollowChannel(self, channel_name):
         json_streams = TwitchRequests.delete(
             '/users/'+self.USER+'/follows/channels/'+channel_name)
-        if 'channel' not in json_streams:
-            return False
-        else:
+        if json_streams['code'] == 204:
             return True
-
-
-if __name__ == '__main__':
-    eng = TwitchEngine()
-    eng.followChannels('kaydada')
+        else:
+            return False
