@@ -32,11 +32,11 @@ class Checker(Thread):
             self._polling.wait(self._period)
             logger.debug('Polling event is triggered.')
             self._polling.clear()
-            if self._stop.isSet():
-                break
+            logger.debug('Try get live channels')
             current_live_channels = self._twitch.getLiveChannels()
             logger.debug('Live Channels: '+str(current_live_channels.viewkeys()))
             local_live_channels = self.getLiveChannels()
+            logger.debug('Previous live Channels: '+str(local_live_channels.viewkeys()))
             off_channels = local_live_channels.viewkeys() - current_live_channels.viewkeys()
             for ch in off_channels:
                 # TODO do we have to notify user the channel went off?
@@ -77,12 +77,18 @@ class Checker(Thread):
         self._status_lock.release()
         return ch_stat
 
-    def stop(self):
+    def async_stop(self):
+        logger.debug('stop is called')
         self._polling.set()
         self._stop.set()
-        # TODO: wait until thread is really stopped
 
-    def stopped(self):
+    def stop(self):
+        self.async_stop()
+        logger.debug('waiting for thread end')
+        while self.is_alive():
+            pass
+
+    def is_stopped(self):
         return self._stop.isSet()
 
 
@@ -145,7 +151,8 @@ class Plugin(PluginBase):
         not_found = []
         for ch in chs:
             # reduce api invocation
-            if ch in self._sublist[sender.id]:
+            # TODO fix this
+            if ch in self._sublist[sender.id]:  # pragma: no cover
                 continue
             ch_disp_name, stat = self._twitch.followChannel(ch)
             if stat is False:
