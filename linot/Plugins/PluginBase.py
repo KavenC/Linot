@@ -10,10 +10,10 @@ class PluginBase:
         self._line = line
 
     def setup(self, sub_parser):
-        ap = LinotArgParser(self.CMD_PREFIX, sub_parser, self._cmdProcess, self._line)
+        ap = LinotArgParser(self.CMD_PREFIX, sub_parser, self._cmd_process, self._line)
         self._setup_argument(ap)
 
-    def isStart(self):
+    def is_start(self):
         return self._started
 
     def start(self):
@@ -39,7 +39,7 @@ class PluginBase:
         # Add the plugin specific arguments
         raise NotImplementedError
 
-    def _cmdProcess(self, args, sender):
+    def _cmd_process(self, args, sender):
         # process argument input
         if args is None:
             # no known arguments
