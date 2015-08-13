@@ -2,6 +2,7 @@
 - [ ] cmd server multi-threading
 - [ ] abstracts the LINE communitation layer.
 - [ ] Module dynamic load/stop/reload without stopping server
+- [ ] PEP8 naming convention
 
 ## Plugins
 - [ ] Facebook messenger
