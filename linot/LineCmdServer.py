@@ -32,12 +32,14 @@ class LineCmdServer(Thread):
                     logger.debug('get cmd: '+str(cmd_list))
                     args, unknown_args = self._cmd_parser.parse_known_args(cmd_list)
                     if len(unknown_args) > 0:
-                        logger.debug('unknown args: ' + str(unknown_args))  #pragma: no cover
+                        logger.debug('unknown args: ' + str(unknown_args))  # pragma: no cover
                     args.proc(args, sender)
                 except SystemExit as e:
                     if e.code == 2:
-                        logger.debug('no known args found.')
-                        self._client.sendMessageToClient(sender, 'Unknown commands.')
+                        matched = self._cmd_parser.process_direct_commands(msg, sender)
+                        if not matched:
+                            logger.debug('no known args found.')
+                            self._client.sendMessageToClient(sender, 'Unknown commands.')
                     else:
                         logger.exception('Unexpected SystemExit')  # pragma: no cover
 
@@ -47,9 +49,13 @@ class LineCmdServer(Thread):
         self._stopped = True
         logger.info('Thread stop')
 
-    def stop(self):
-        logger.info('Stopping')
+    def async_stop(self):
+        logger.debug('stop is called')
         self._stop.set()
+
+    def stop(self):
+        self.async_stop()
+        logger.debug('waiting for thread end')
 
     def stopped(self):
         return self._stopped

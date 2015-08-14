@@ -49,8 +49,8 @@ class Checker(Thread):
                 for user_id in local_sublist:
                     if ch in local_sublist[user_id]:
                         msg = """{channel_name} is now streamming!!
-[Title]\t{channel_title}
-[Playing]\t{channel_playing}
+[Title] {channel_title}
+[Playing] {channel_playing}
 {channel_url}""".format(
                             channel_name=ch,
                             channel_title=current_live_channels[ch]['status'],
@@ -59,7 +59,6 @@ class Checker(Thread):
                         self._line.sendMessageToId(user_id, msg)
             self._setLiveChannels(local_live_channels)
 
-        # TODO thread stop process
         logger.info('Twitch Checker is stopped')
 
     def _setLiveChannels(self, ch_list):
@@ -85,8 +84,7 @@ class Checker(Thread):
     def stop(self):
         self.async_stop()
         logger.debug('waiting for thread end')
-        while self.is_alive():
-            pass
+        self.join()
 
     def is_stopped(self):
         return self._stop.isSet()
@@ -104,6 +102,7 @@ class Plugin(PluginBase):
 
     def _setup_argument(self, cmd_group):
         import argparse
+        import re
         cmd_group.add_argument('-subscribe', nargs='+', func=self._subscribe,
                                help='Subscribe channels')
         cmd_group.add_argument('-unsubscribe', nargs='+', func=self._unsubscribe,
@@ -114,6 +113,7 @@ class Plugin(PluginBase):
                                help=argparse.SUPPRESS)
         cmd_group.add_argument('-listusers', action='store_true', func=self._listUsers,
                                help=argparse.SUPPRESS)
+        cmd_group.add_direct_command(self._sub_by_url, 'twitch\.tv/(\w+)[\s\t,]*', re.IGNORECASE)
 
     def _start(self):
         # Load subscribe list
@@ -137,6 +137,11 @@ class Plugin(PluginBase):
         local_sublist = copy.copy(self._sublist)
         self._sublist_lock.release()
         return local_sublist
+
+    def _sub_by_url(self, match_iter, cmd, sender):
+        logger.debug('sub by url: '+str(match_iter))
+        logger.debug('sub by url, direct cmd: '+cmd)
+        self._subscribe(match_iter, sender)
 
     def _calculateChannelSubCount(self):
         self._channel_sub_count = defaultdict(int)

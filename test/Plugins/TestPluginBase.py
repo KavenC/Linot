@@ -1,7 +1,7 @@
 from linot.Plugins.PluginBase import PluginBase
+from linot.LinotArgParser import LinotParser
 from nose.tools import ok_
 from nose.tools import raises
-import argparse
 
 
 class MockLine:
@@ -23,9 +23,8 @@ class TestPluginBase:
 
     @raises(NotImplementedError)
     def test_setup(self):
-        parser = argparse.ArgumentParser()
-        sub_parser = parser.add_subparsers()
-        self.plugin.setup(sub_parser)
+        parser = LinotParser()
+        self.plugin.setup(parser)
 
     @raises(NotImplementedError)
     def test_start(self):

@@ -1,9 +1,10 @@
 from linot.LineCmdServer import LineCmdServer
-from linot.LinotArgParser import LinotArgParser
+from linot.LinotArgParser import LinotArgParser, LinotParser
 import argparse
 from nose.tools import ok_
 from nose.tools import timed
 import threading
+import re
 
 
 class fakeMessage:
@@ -52,8 +53,8 @@ class mock_engine:
 
 class TestLineCmdServer:
     def setUp(self):
-        parser = argparse.ArgumentParser(usage=argparse.SUPPRESS, add_help=False)
-        sub_cmd_parser = parser.add_subparsers()
+        parser = LinotParser(usage=argparse.SUPPRESS, add_help=False)
+        sub_cmd_parser = parser.get_sub_parser()
         self.sub_parser = sub_cmd_parser
         self.parser = parser
 
@@ -64,7 +65,7 @@ class TestLineCmdServer:
     @timed(10)
     def testCmdProcess_Normal(self):
         mock = mock_engine()
-        lap = LinotArgParser('testcmd', self.sub_parser, mock.cmdProcess, None)
+        lap = LinotArgParser('testcmd', self.parser, mock.cmdProcess, None)
         lap.add_argument('-a', action='store_true')
         lap.add_argument('-b', action='store_true')
         self.cmd_server = LineCmdServer(mock, self.parser)
@@ -107,7 +108,7 @@ class TestLineCmdServer:
     @timed(10)
     def testCmdProcess_Unknown(self):
         mock = mock_engine()
-        lap = LinotArgParser('testcmd', self.sub_parser, mock.cmdProcess, None)
+        lap = LinotArgParser('testcmd', self.parser, mock.cmdProcess, None)
         lap.add_argument('-a', action='store_true')
         self.cmd_server = LineCmdServer(mock, self.parser)
 
@@ -138,3 +139,24 @@ class TestLineCmdServer:
         self.cmd_server.join(10)
         ok_(self.cmd_server.stopped())
         ok_(not self.cmd_server.isAlive())
+
+    def test_direct_command(self):
+        mock = mock_engine()
+        lap = LinotArgParser('testcmd', self.parser, mock.cmdProcess, None)
+
+        def cmd_checker(match_list, cmd, sender):
+            ok_('somechannel' in match_list)
+            ok_(len(match_list) == 1)
+            ok_(cmd == 'www.twitch.tv/somechannel')
+            cmd_checker.runned = True
+        cmd_checker.runned = False
+        lap.add_direct_command(cmd_checker, 'twitch\.tv/(\w+)[\s\t,]*', re.IGNORECASE)
+        self.cmd_server = LineCmdServer(mock, self.parser)
+        fake_cmd = [
+            ['sender', None, fakeMessage('www.twitch.tv/somechannel')],
+        ]
+        mock.addTest(fake_cmd, None, None)
+        self.cmd_server.start()
+        mock.test_finished.wait(10)
+        ok_(cmd_checker.runned)
+        self.cmd_server.stop()

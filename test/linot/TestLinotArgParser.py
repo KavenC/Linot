@@ -3,8 +3,9 @@ from nose.tools import assert_raises
 from nose.tools import raises
 from nose.tools import ok_
 from nose.tools import eq_
-from linot.LinotArgParser import LinotArgParser
+from linot.LinotArgParser import LinotArgParser, LinotParser
 import argparse
+import re
 
 
 class MockLine:
@@ -19,8 +20,8 @@ class MockLine:
 
 class TestLinotArgParser:
     def setUp(self):
-        parser = argparse.ArgumentParser(usage=argparse.SUPPRESS, add_help=False)
-        sub_cmd_parser = parser.add_subparsers()
+        parser = LinotParser(usage=argparse.SUPPRESS, add_help=False)
+        sub_cmd_parser = parser.get_sub_parser()
         self.sub_parser = sub_cmd_parser
         self.parser = parser
 
@@ -28,7 +29,7 @@ class TestLinotArgParser:
         def cmdProcess(args, sender):
             pass
         line = MockLine()
-        LinotArgParser('testcmd', self.sub_parser, cmdProcess, line)
+        LinotArgParser('testcmd', self.parser, cmdProcess, line)
         # test -h and --help goes to print_help
         args, unknown_args = self.parser.parse_known_args('testcmd -h'.split())
         eq_(len(unknown_args), 0)
@@ -46,7 +47,7 @@ class TestLinotArgParser:
     def testAddArgument_Exclusiveness(self):
         def cmdProcess(args, sender):
             assert_equal(args.a is True and args.b is True, False)
-        lap = LinotArgParser('testcmd', self.sub_parser, cmdProcess, None)
+        lap = LinotArgParser('testcmd', self.parser, cmdProcess, None)
         lap.add_argument('-a', action='store_true')
         lap.add_argument('-b', action='store_true')
         with assert_raises(SystemExit) as e:
@@ -57,7 +58,7 @@ class TestLinotArgParser:
     def testAddArgument_DestException(self):
         def cmdProcess(args, sender):
             pass
-        lap = LinotArgParser('testcmd', self.sub_parser, cmdProcess, None)
+        lap = LinotArgParser('testcmd', self.parser, cmdProcess, None)
         with assert_raises(ValueError):
             lap.add_argument('-a', dest='b', action='store_true')
 
@@ -71,7 +72,7 @@ class TestLinotArgParser:
         def custFunc(value, sender):
             ok_(value and sender)
 
-        lap = LinotArgParser('testcmd', self.sub_parser, cmdProcess, None)
+        lap = LinotArgParser('testcmd', self.parser, cmdProcess, None)
         lap.add_argument('-a', action='store_true', func=custFunc)
         lap.add_argument('-b', action='store_true')  # default proc
         args, unknown_args = self.parser.parse_known_args('testcmd -a'.split())
@@ -85,7 +86,7 @@ class TestLinotArgParser:
 
         def custFunc(value, sender):
             ok_(value)
-        lap = LinotArgParser('testcmd', self.sub_parser, cmdProcess, None)
+        lap = LinotArgParser('testcmd', self.parser, cmdProcess, None)
         lap.add_argument('-a', '-b', '-c', action='store_true', func=custFunc)
         args, unkown_args = self.parser.parse_known_args('testcmd -a'.split())
         args, unkown_args = self.parser.parse_known_args('testcmd -b'.split())
@@ -97,7 +98,7 @@ class TestLinotArgParser:
         def cmdProcess(args, sender):
             ok_(False)
 
-        lap = LinotArgParser('testcmd', self.sub_parser, cmdProcess, None)
+        lap = LinotArgParser('testcmd', self.parser, cmdProcess, None)
         lap.add_argument('abc', action='store_true')
 
     def testPrintHelp(self):
@@ -106,7 +107,7 @@ class TestLinotArgParser:
 
         test_str = 'testtesttest'
         line = MockLine()
-        lap = LinotArgParser('testcmd', self.sub_parser, cmdProcess, line)
+        lap = LinotArgParser('testcmd', self.parser, cmdProcess, line)
         lap.add_argument('-a', action='store_true', help=test_str)
         lap.add_argument('-noshow', action='store_true', help=argparse.SUPPRESS)
         lap.add_argument('-showme', action='store_true', help='')
@@ -133,6 +134,40 @@ class TestLinotArgParser:
                 return
             ok_(False)
 
-        LinotArgParser('testcmd', self.sub_parser, cmdProcess, None)
+        LinotArgParser('testcmd', self.parser, cmdProcess, None)
         args, unknown_args = self.parser.parse_known_args('testcmd'.split())
         args.proc(args, None)
+
+    def test_direct_command(self):
+        def cmd_checker1(match_list, cmd, sender):
+            cmd_checker1.runned = True
+            cmd_checker1.cmd = cmd
+            ok_('1234' in match_list)
+
+        def cmd_checker2(match_list, cmd, sender):
+            cmd_checker2.runned = True
+            cmd_checker2.cmd = cmd
+            ok_('1234' in match_list)
+
+        ap = LinotArgParser('testcmd', self.parser, None, None)
+        ap.add_direct_command(cmd_checker1, '[cxyz]+([0-9]+)', re.IGNORECASE)
+        ap = LinotArgParser('testcmd2', self.parser, None, None)
+        ap.add_direct_command(cmd_checker2, '[abc]+([0-9]+)', re.IGNORECASE)
+        cmd_checker1.runned = False
+        cmd_checker2.runned = False
+        self.parser.process_direct_commands('1234', None)
+        ok_(cmd_checker1.runned is False)
+        ok_(cmd_checker2.runned is False)
+        self.parser.process_direct_commands('xyz1234', None)
+        ok_(cmd_checker1.runned is True)
+        ok_(cmd_checker2.runned is False)
+        cmd_checker1.runned = False
+        self.parser.process_direct_commands('ab1234', None)
+        ok_(cmd_checker1.runned is False)
+        ok_(cmd_checker2.runned is True)
+        cmd_checker2.runned = False
+        self.parser.process_direct_commands('c1234', None)
+        ok_(cmd_checker1.runned is True)
+        ok_(cmd_checker2.runned is True)
+        ok_(cmd_checker1.cmd == 'c1234')
+        ok_(cmd_checker2.cmd == 'c1234')

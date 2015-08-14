@@ -1,6 +1,6 @@
 from nose.tools import ok_
 from linot.Plugins.TwitchNotifier.Plugin import Plugin
-from linot.LinotArgParser import LinotArgParser
+from linot.LinotArgParser import LinotArgParser, LinotParser
 from linot.LinotConfig import LinotConfig as Config
 import argparse
 import inspect
@@ -43,19 +43,13 @@ class MockTwitchEngine:
         return self.live_ch_list
 
     def followChannel(self, ch):
-        if ch in self.ch_list:
-            return ch+'_disp_name', True
-        else:
+        if ch not in self.ch_list:
             return '', False
+        else:
+            return ch+'_disp_name', True
 
     def unfollowChannel(self, ch):
-        try:
-            self.ch_list.remove(ch.rstrip('_disp_name'))
-        except ValueError as e:
-            print ch
-            print self.ch_list
-            raise e
-
+        pass
 
 class TestPlugin:
     def setUp(self):
@@ -63,9 +57,14 @@ class TestPlugin:
         self.twitch_engine = MockTwitchEngine()
         self.plugin = Plugin(self.line)
         self.plugin._twitch = self.twitch_engine
-        self.parser = argparse.ArgumentParser(usage=argparse.SUPPRESS, add_help=False)
-        sub_cmd_parser = self.parser.add_subparsers()
-        self.cmd_group = LinotArgParser('testcmd', sub_cmd_parser, None, self.line)
+        self.parser = LinotParser(usage=argparse.SUPPRESS, add_help=False)
+        self.cmd_group = LinotArgParser('testcmd', self.parser, None, self.line)
+
+    def tearDown(self):
+        try:
+            os.remove(self.plugin.SUB_FILE)
+        except OSError:
+            pass
 
     def testSetupArgument(self):
         # TODO Any bettery ways?
@@ -137,10 +136,6 @@ class TestPlugin:
         ok_(self.plugin._channel_sub_count['testch4'] == 0, 'count =' + str(self.plugin._channel_sub_count['testch4']))
 
     def testStart_SublistNotFound(self):
-        try:
-            os.remove(self.plugin.SUB_FILE)
-        except OSError:
-            pass
         self.plugin._start()
         while(True):
             threading.Event().wait(1)
@@ -246,20 +241,9 @@ class TestPlugin:
         ok_('not found' not in ' '.join(self.plugin._line.msg_text))
 
     def testSubscribe_OneNotFound(self):
-        try:
-            os.remove(self.plugin.SUB_FILE)
-        except OSError:
-            pass
         self.plugin.start()
-        while(True):
-            threading.Event().wait(.1)
-            try:
-                if self.plugin._check_thread.is_alive():
-                    self.plugin.stop()
-                else:
-                    break
-            except AttributeError as e:
-                print e
+        threading.Event().wait(1)
+        self.plugin.stop()
         self.plugin._twitch.ch_list = ['testch2', 'testch3']
         fake_sender = MockSender('fake_sender')
         self.plugin._subscribe(['testch1'], fake_sender)
@@ -386,3 +370,30 @@ class TestPlugin:
             if 'fake_sender1' in msg:
                 ok_('testch2' in msg)
                 ok_('testch1' in msg)
+
+    def test_sub_by_url(self):
+        sender = MockSender('sender')
+        self.plugin._twitch.ch_list = ['KayDaDa', 'LinotServant']
+        self.plugin.setup(self.parser)
+        self.plugin.start()
+        threading.Event().wait(1)
+        self.plugin.stop()
+        self.plugin._sub_by_url(['KayDaDa', 'LinotServant'], 'dummy', sender)
+        ok_('KayDaDa_disp_name' in self.plugin._sublist[sender.id],
+            'sublist = '+str(self.plugin._sublist[sender.id]))
+        ok_('LinotServant_disp_name' in self.plugin._sublist[sender.id],
+            'sublist = '+str(self.plugin._sublist[sender.id]))
+
+        self.plugin._unsubscribe(['KayDaDa_disp_name', 'LinotServant_disp_name'], sender)
+        ok_('KayDaDa_disp_name' not in self.plugin._sublist[sender.id],
+            'sublist = '+str(self.plugin._sublist[sender.id]))
+        ok_('LinotServant_disp_name' not in self.plugin._sublist[sender.id],
+            'sublist = '+str(self.plugin._sublist[sender.id]))
+
+        # Integration test
+        self.parser.process_direct_commands('www.twitch.tv/KayDaDa twitch.tv/LinotServant', sender)
+        print self.line.msg_text
+        ok_('KayDaDa_disp_name' in self.plugin._sublist[sender.id],
+            'sublist = '+str(self.plugin._sublist[sender.id]))
+        ok_('LinotServant_disp_name' in self.plugin._sublist[sender.id],
+            'sublist = '+str(self.plugin._sublist[sender.id]))
