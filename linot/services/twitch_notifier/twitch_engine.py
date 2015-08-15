@@ -3,15 +3,16 @@
 from __future__ import print_function
 import json
 import requests
-from linot.LinotConfig import LinotConfig as Config
 import sys
-from linot.LinotLogger import logging
-logger = logging.getLogger(__name__)
+
+import linot.config as config
+import linot.logger
+logger = linot.logger.getLogger(__name__)
 
 
 class TwitchRequests:  # pragma: no cover
     TWITCH_API_BASE = 'https://api.twitch.tv/kraken/'
-    OAUTH_TOKEN = Config['twitch_oauth']
+    OAUTH_TOKEN = config['service']['twitch']['oauth']
     IGNORE_STATUS = [
         204,
         422,
@@ -19,7 +20,7 @@ class TwitchRequests:  # pragma: no cover
     ]
 
     @classmethod
-    def _twitchProcess(cls, action, url, pms, **kwargs):
+    def _twitch_process(cls, action, url, pms, **kwargs):
         twitch_api_url = cls.TWITCH_API_BASE + url
         if pms is None:
             pms_a = {}
@@ -36,10 +37,10 @@ class TwitchRequests:  # pragma: no cover
 
     @classmethod
     def get(cls, url, params=None, **kwargs):
-        return cls._twitchProcess(requests.get, url, params, **kwargs)
+        return cls._twitch_process(requests.get, url, params, **kwargs)
 
     @classmethod
-    def multiGet(cls, url, params=None, per=25, **kwargs):
+    def multi_get(cls, url, params=None, per=25, **kwargs):
         if params is None:
             params = {
                 'limit': per,
@@ -61,15 +62,15 @@ class TwitchRequests:  # pragma: no cover
 
     @classmethod
     def put(cls, url, params=None, **kwargs):
-        return cls._twitchProcess(requests.put, url, params, **kwargs)
+        return cls._twitch_process(requests.put, url, params, **kwargs)
 
     @classmethod
     def delete(cls, url, params=None, **kwargs):
-        return cls._twitchProcess(requests.delete, url, params, **kwargs)
+        return cls._twitch_process(requests.delete, url, params, **kwargs)
 
     @classmethod
     def post(cls, url, params=None, **kwargs):
-        return cls._twitchProcess(requests.post, url, params, **kwargs)
+        return cls._twitch_process(requests.post, url, params, **kwargs)
 
 
 def JSONPrint(dic):  # pragma: no cover
@@ -78,10 +79,10 @@ def JSONPrint(dic):  # pragma: no cover
 
 class TwitchEngine:
 
-    USER = Config['twitch_user']
+    USER = config['service']['twitch']['user']
 
-    def getChannels(self):
-        json_channels_list = TwitchRequests.multiGet('/users/' + self.USER + '/follows/channels')
+    def get_channels(self):
+        json_channels_list = TwitchRequests.multi_get('/users/' + self.USER + '/follows/channels')
         channels = {}
         for json_channels in json_channels_list:
             for followed_channel in json_channels['follows']:
@@ -89,8 +90,8 @@ class TwitchEngine:
                 channels[name] = followed_channel['channel']
         return channels
 
-    def getLiveChannels(self):
-        live_channel_json = TwitchRequests.multiGet('/streams/followed')
+    def get_live_channels(self):
+        live_channel_json = TwitchRequests.multi_get('/streams/followed')
         ret_live_channels = {}
         for json_streams in live_channel_json:
             for stream in json_streams['streams']:
@@ -98,17 +99,17 @@ class TwitchEngine:
                 ret_live_channels[name] = stream['channel']
         return ret_live_channels
 
-    def followChannel(self, channel_name):
+    def follow_channel(self, channel_name):
         json_streams = TwitchRequests.put(
-            '/users/'+self.USER+'/follows/channels/'+channel_name)
+            '/users/' + self.USER + '/follows/channels/' + channel_name)
         if 'channel' not in json_streams:
             return channel_name, False
         else:
             return json_streams['channel']['display_name'], True
 
-    def unfollowChannel(self, channel_name):
+    def unfollow_channel(self, channel_name):
         json_streams = TwitchRequests.delete(
-            '/users/'+self.USER+'/follows/channels/'+channel_name)
+            '/users/' + self.USER + '/follows/channels/' + channel_name)
         if json_streams['code'] == 204:
             return True
         else:

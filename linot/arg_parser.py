@@ -1,8 +1,10 @@
 from __future__ import print_function
 from argparse import SUPPRESS, ArgumentParser
 import re
-from linot.LinotLogger import logging
-logger = logging.getLogger(__name__)
+from io import BytesIO
+
+import logger
+logger = logger.getLogger(__name__)
 
 
 class LinotParser(ArgumentParser):
@@ -30,8 +32,7 @@ class LinotParser(ArgumentParser):
 
 
 class LinotArgParser:
-    # TODO need to refactor to get rid of passing line_engine
-    def __init__(self, subcmd, parser, default_process, line):
+    def __init__(self, subcmd, parser, default_process):
         self._parser = parser
         sub_cmd_parser = parser.get_sub_parser()
         ap = sub_cmd_parser.add_parser(subcmd, add_help=False)
@@ -40,7 +41,6 @@ class LinotArgParser:
         self._default_process = default_process
         self._arg_list = {}
         self._sub_parser.set_defaults(proc=self._process_args)
-        self._line = line
         self.add_argument('-h', '--help',  action='store_true', func=self.print_help, help='show command list')
 
     def add_direct_command(self, func, pattern, flags=0):
@@ -91,7 +91,6 @@ class LinotArgParser:
         self._default_process(None, sender)
 
     def print_help(self, args, sender=None):
-        from io import BytesIO
         msg = BytesIO()
         print('[{} command list]'.format(self._subcmd), file=msg)
         # TODO fix this ....
@@ -109,4 +108,4 @@ class LinotArgParser:
                 print('>> '+help_text, file=msg)
             print('-----', file=msg)
         if sender is not None:
-            self._line.sendMessageToClient(sender, msg.getvalue())
+            sender.send_message(msg.getvalue())

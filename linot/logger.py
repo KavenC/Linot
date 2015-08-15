@@ -1,6 +1,6 @@
+import sys
 import logging
 import logging.config
-import sys
 
 config = {
     'version': 1,
@@ -36,3 +36,6 @@ config = {
 
 }
 logging.config.dictConfig(config)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+logging.getLogger('requests').setLevel(logging.WARNING)
+sys.modules[__name__] = logging

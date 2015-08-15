@@ -1,16 +1,17 @@
-from __future__ import print_function
-from linot.LinotArgParser import LinotArgParser
+import sys
+
+from linot.arg_parser import LinotArgParser
 
 
-class PluginBase:
-    CMD_PREFIX = None  # The identifier for subparser
-    _started = False
+class ServiceBase:
+    def __init__(self):
+        self._started = False
 
-    def __init__(self, line):
-        self._line = line
+    def __str__(self):
+        return '{}({})'.format(sys.modules[self.__module__].__package__, self.cmd)
 
     def setup(self, parser):
-        ap = LinotArgParser(self.CMD_PREFIX, parser, self._cmd_process, self._line)
+        ap = LinotArgParser(self.cmd, parser, self._cmd_process)
         self._setup_argument(ap)
 
     def is_start(self):
@@ -43,5 +44,6 @@ class PluginBase:
         # process argument input
         if args is None:
             # no known arguments
-            self._line.sendMessageToClient(sender, 'Unknown commands.')
-        self._line.sendMessageToClient(sender, 'Command is not implemented yet')
+            sender.send_message('Unknown commands.')
+        else:
+            sender.send_message('Command is not implemented yet')
