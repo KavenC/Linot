@@ -1,8 +1,6 @@
 ## Frameworks
-- [ ] cmd server multi-threading
-- [ ] abstracts the LINE communitation layer.
+- [ ] Re-build test cases
 - [ ] Module dynamic load/stop/reload without stopping server
-- [ ] PEP8 naming convention
 
 ## Plugins
 - [ ] Facebook messenger
@@ -17,6 +15,9 @@
 - [ ] [Twitch] unsubscribe with case-insensitive name
 
 ## Finished
+- [x] abstracts the LINE communitation layer.
+- [x] PEP8 naming convention
+- [x] cmd server multi-threading
 - [x] add test codes for all current modules.
 - [x] try to get rid of line client getContactFromId, so that linot don't need to add user to contact.
 - [x] [Twitch] subscribe channel by url
