@@ -8,7 +8,7 @@ class ServiceBase:
         self._started = False
 
     def __str__(self):
-        return '{}({})'.format(sys.modules[self.__module__].__package__, self.cmd)
+        return '{} ({})'.format(sys.modules[self.__module__].__package__, self.cmd)
 
     def setup(self, parser):
         ap = LinotArgParser(self.cmd, parser, self._cmd_process)

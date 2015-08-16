@@ -2,9 +2,10 @@ from __future__ import print_function
 import argparse
 import io
 
-import communicator
+import interfaces  # noqa
 import services
 import config
+import command_server
 from arg_parser import LinotArgParser, LinotParser
 import logger
 logger = logger.getLogger(__name__)
@@ -23,7 +24,7 @@ def cmd_process(args, sender):
                 service_instances[service].stop()
                 logger.debug(service + ' is stopped')
             logger.debug('stopping command server')
-            communicator.stop()
+            command_server.stop()
         return
 
     if args.listservices:
@@ -52,7 +53,7 @@ def main():
         service_instances[service] = service_instance
         service_instance.start()
 
-    communicator.start(parser)
+    command_server.start(parser)
 
 if __name__ == '__main__':
     main()

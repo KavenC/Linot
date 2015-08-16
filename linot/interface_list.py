@@ -1,6 +1,5 @@
-from linot import logger
+import logger
 logger = logger.getLogger(__name__)
-
 interface_list = {}  # interface instances
 
 

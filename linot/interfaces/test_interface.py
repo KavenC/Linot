@@ -1,5 +1,5 @@
-from linot.communicator.base_interface import BaseInterface
-from linot.communicator import interface_list as interfaces
+from linot.base_interface import BaseInterface
+from linot import interface_list as interfaces
 
 
 class TestInterface(BaseInterface):

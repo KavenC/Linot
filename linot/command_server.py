@@ -1,8 +1,8 @@
 from threading import Thread, Event
 
 from interface_list import interface_list
-import linot.logger
-logger = linot.logger.getLogger(__name__)
+import logger
+logger = logger.getLogger(__name__)
 
 
 class CmdServer(Thread):

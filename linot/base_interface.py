@@ -1,4 +1,4 @@
-from linot.communicator.command_submitter import CommandSubmitter
+from command_submitter import CommandSubmitter
 
 
 class BaseInterface:

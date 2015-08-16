@@ -7,9 +7,9 @@ from line import LineContact
 
 from linot import config
 from linot import logger
-from linot.communicator.base_interface import BaseInterface
-from linot.communicator import interface_list as interfaces
-from linot.communicator.command_submitter import CommandSubmitter
+from linot.base_interface import BaseInterface
+from linot import interface_list as interfaces
+from linot.command_submitter import CommandSubmitter
 logger = logger.getLogger(__name__)
 
 
