@@ -2,8 +2,10 @@ from command_submitter import CommandSubmitter
 
 
 class BaseInterface:
+    NAME = ''
+
     def __init__(self, interface_name):
-        self.name = interface_name
+        self.NAME = interface_name
 
     def polling_command(self):
         """Blocking polling command input"""

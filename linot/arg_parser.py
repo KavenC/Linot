@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""Argument Parser for Linot input commands
+
+This modules rewrites or extends functions of `argparse` in the Python
+Starndard Library. It simplifies the command interface so that services
+can be developed without worrying about the complexity of user inputs
+
+"""
+
 from __future__ import print_function
 from argparse import SUPPRESS, ArgumentParser
 import re
@@ -8,6 +17,12 @@ logger = logger.getLogger(__name__)
 
 
 class LinotParser(ArgumentParser):
+    """Extends the usibility of ArgumentParser
+
+    Attributes:
+        (same with ArgumentParser in standard library)
+
+    """
     def __init__(self, *args, **kwargs):
         ArgumentParser.__init__(self, *args, **kwargs)
         self._sub_parser = None
@@ -96,7 +111,7 @@ class LinotArgParser:
         # TODO fix this ....
         print('{} {}'.format(self._subcmd, '-h/--help'), file=msg)
         print('>> show this command list.', file=msg)
-        print('-----', file=msg)
+        print('--------------', file=msg)
         for arg in self._arg_list:
             if self._arg_list[arg]['help'] is SUPPRESS:
                 continue
@@ -106,6 +121,6 @@ class LinotArgParser:
             print('{} {}'.format(self._subcmd, self._arg_list[arg]['arg']), file=msg)
             if help_text != '':
                 print('>> '+help_text, file=msg)
-            print('-----', file=msg)
+            print('--------------', file=msg)
         if sender is not None:
             sender.send_message(msg.getvalue())

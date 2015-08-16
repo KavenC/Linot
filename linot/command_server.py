@@ -13,7 +13,7 @@ class CmdServer(Thread):
         self._cmd_parser = cmd_parser
         self._response_wait = response_wait
         self._interface = interface
-        self._logger = logger.getChild(interface.name)
+        self._logger = logger.getChild(interface.NAME)
 
     def run(self):
         self._stopped = False
@@ -30,21 +30,28 @@ class CmdServer(Thread):
         self._logger.info('Thread stop')
 
     def _process_command(self, cmd, sender):
+        # this function is runned by a worker thread
+        logger = self._logger.getChild('worker')
         try:
             arg_list = cmd.split()
-            self._logger.debug('get cmd: ' + str(arg_list))
+            logger.debug('get cmd: ' + str(arg_list))
             args, unknown_args = self._cmd_parser.parse_known_args(arg_list)
             if len(unknown_args) > 0:
-                self._logger.debug('unknown args: ' + str(unknown_args))  # pragma: no cover
+                logger.debug('unknown args: ' + str(unknown_args))  # pragma: no cover
             args.proc(args, sender)
         except SystemExit as e:
+            # TODO maybe these processes could be hided in to cmd parser
             if e.code == 2:
+                # reach here if no sub command is found in the cmd
+                # direct command is processed here
                 matched = self._cmd_parser.process_direct_commands(cmd, sender)
                 if not matched:
-                    self._logger.debug('no known args found.')
-                    self._interface.send_message(sender, 'Unknown commands.')
+                    # if no direct command is matching
+                    # response to user that we cannot recognize the command
+                    logger.debug('no known args found.')
+                    sender.send_message('Unknown commands.')
             else:
-                self._logger.exception('Unexpected SystemExit')  # pragma: no cover
+                logger.exception('Unexpected SystemExit')  # pragma: no cover
 
     def async_stop(self):
         logger.debug('stop is called')
@@ -53,19 +60,18 @@ class CmdServer(Thread):
     def stop(self):
         self.async_stop()
         logger.debug('waiting for thread end')
-
-    def stopped(self):
-        return self._stopped
-
+        self.join()
 
 server_threads = []
 
 
-def start(parser):
+def start(parser, iflist=interface_list):
     # starts one thread for each interface
     # CmdServer automatically starts a new server thread when received a new
     # command
-    for interface in interface_list:
+    global server_threads
+    server_threads = []  # if restarted, clear all old threads
+    for interface in iflist:
         thread = CmdServer(parser, interface_list[interface])
         server_threads.append(thread)
         thread.start()
