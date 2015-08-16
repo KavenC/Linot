@@ -17,9 +17,6 @@ class CommandSubmitter:
     def __unicode__(self):
         return unicode(self.get_display_name())
 
-    def __str__(self):
-        self.get_display_name()
-
     def __eq__(self, other):
         return hash(self) == hash(other)
 

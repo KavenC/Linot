@@ -24,7 +24,8 @@ class TestInterface(BaseInterface):
         return True
 
     def get_display_name(self, submitter):
-        return ''
+        name = '<{}>{}'.format(self.NAME, submitter.code)
+        return name
 
     def reset(self):
         self.msg_queue = defaultdict(list)

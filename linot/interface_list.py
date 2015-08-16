@@ -10,3 +10,11 @@ def register(if_cls):
         logger.critical('New: {} <-> Old: {}'.format(interface, interface_list[interface.NAME]))
         raise NameError
     interface_list[interface.NAME] = interface
+
+
+def unregister(if_cls):
+    for interface in interface_list:
+        if isinstance(interface_list[interface], if_cls):
+            del interface_list[interface]
+            return
+    logger.warn('interface not found on unrgister: {}'.format(if_cls))
