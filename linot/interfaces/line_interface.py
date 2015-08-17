@@ -59,12 +59,12 @@ class LineInterface(BaseInterface):
         # construct formal command list
         command_list = []
         for op in op_list:
-            submitter = CommandSubmitter(self.name, op[0].id)
+            submitter = CommandSubmitter(self.NAME, op[0].id)
             command_list.append((submitter, op[2].text))
         return command_list
 
     def send_message(self, receiver, msg):
-        assert receiver.interface_name == self.name
+        assert receiver.interface_name == self.NAME
         self._send_message_to_id(receiver.code, msg)
 
     def get_display_name(self, submitter):
