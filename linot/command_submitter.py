@@ -1,4 +1,4 @@
-from interface_list import interface_list as interfaces
+import interfaces
 
 
 class CommandSubmitter:
@@ -7,11 +7,11 @@ class CommandSubmitter:
         self.code = code
 
     def send_message(self, msg):
-        interface = interfaces[self.interface_name]
+        interface = interfaces.get(self.interface_name)
         return interface.send_message(self, msg)
 
     def get_display_name(self):
-        interface = interfaces[self.interface_name]
+        interface = interfaces.get(self.interface_name)
         return interface.get_display_name(self)
 
     def __unicode__(self):

@@ -7,7 +7,7 @@ from nose.tools import ok_
 from nose.tools import eq_
 
 from linot.arg_parser import LinotArgParser, LinotParser
-from linot.interface_list import interface_list as interfaces
+import linot.interfaces as interfaces
 from linot.command_submitter import CommandSubmitter
 
 
@@ -31,20 +31,20 @@ class TestLinotArgParser:
         eq_(len(unknown_args), 0)
         sender = CommandSubmitter('test', 'test_sender')
         args.proc(args, sender)
-        msg_queue = interfaces['test'].msg_queue
+        msg_queue = interfaces.get('test').msg_queue
         ok_('command list' in ' '.join(msg_queue[sender.code]))
         args, unknown_args = self.parser.parse_known_args('testcmd --help'.split())
         eq_(len(unknown_args), 0)
-        interfaces['test'].reset()
+        interfaces.get('test').reset()
         args.proc(args, sender)
-        msg_queue = interfaces['test'].msg_queue
+        msg_queue = interfaces.get('test').msg_queue
         ok_('command list' in ' '.join(msg_queue[sender.code]))
 
         # add help
         args, unknown_args = self.parser.parse_known_args('testcmd -h'.split())
-        interfaces['test'].reset()
+        interfaces.get('test').reset()
         args.proc(args, sender)
-        msg_queue = interfaces['test'].msg_queue
+        msg_queue = interfaces.get('test').msg_queue
         msg = ' '.join(msg_queue[sender.code])
         ok_(test_str in msg, msg)
         ok_('-nowshow' not in msg)
@@ -52,9 +52,9 @@ class TestLinotArgParser:
 
         # Test help suppress if sender not found (for coverage)
         args, unknown_args = self.parser.parse_known_args('testcmd -h'.split())
-        interfaces['test'].reset()
+        interfaces.get('test').reset()
         args.proc(args, None)
-        msg_queue = interfaces['test'].msg_queue
+        msg_queue = interfaces.get('test').msg_queue
         msg = ' '.join(msg_queue[sender.code])
         ok_(msg is '', msg)
 

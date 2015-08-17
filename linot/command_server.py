@@ -1,6 +1,6 @@
 from threading import Thread, Event
 
-from interface_list import interface_list
+import interfaces
 import logger
 logger = logger.getLogger(__name__)
 
@@ -65,14 +65,14 @@ class CmdServer(Thread):
 server_threads = []
 
 
-def start(parser, iflist=interface_list):
+def start(parser, iflist=interfaces.avail()):
     # starts one thread for each interface
     # CmdServer automatically starts a new server thread when received a new
     # command
     global server_threads
     server_threads = []  # if restarted, clear all old threads
     for interface in iflist:
-        thread = CmdServer(parser, interface_list[interface])
+        thread = CmdServer(parser, interfaces.get(interface))
         server_threads.append(thread)
         thread.start()
 

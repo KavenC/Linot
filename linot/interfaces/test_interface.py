@@ -4,12 +4,12 @@ import sys
 from collections import defaultdict
 
 from linot.base_interface import BaseInterface
-from linot import interface_list as interfaces
 
 
 class TestInterface(BaseInterface):
+    NAME = 'test'
+
     def __init__(self):
-        BaseInterface.__init__(self, 'test')
         self.reset()
 
     def polling_command(self):
@@ -44,5 +44,5 @@ class TestInterface(BaseInterface):
         self.polling_callback = func
 
 # register interface only when runnig testcases with nose
-if 'nose' in sys.modules:
-    interfaces.register(TestInterface)
+if 'nose' not in sys.modules:
+    TestInterfaces = None  # avoid being imported into interface list

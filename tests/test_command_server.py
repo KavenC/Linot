@@ -7,7 +7,7 @@ from nose.tools import timed
 
 from linot.arg_parser import LinotArgParser, LinotParser
 from linot import command_server
-from linot.interface_list import interface_list as interfaces
+import linot.interfaces as interfaces
 from linot.command_submitter import CommandSubmitter
 
 
@@ -66,7 +66,7 @@ class CmdTester:
     def add_test(self, test_list):
         for sender_code, cmd, cmd_chk, msg_chk in test_list:
             sender = CommandSubmitter(sender_code, self.if_name)
-            interfaces[self.in_name].add_command(sender, cmd)
+            interfaces.get(self.in_name).add_command(sender, cmd)
             self.senders[self.total_test_count] = sender
             self.cmd_checkers[self.total_test_count] = cmd_chk
             self.msg_checkers[self.total_test_count] = msg_chk
@@ -97,7 +97,7 @@ class TestCmdServer:
         # command = [(sender, cmd string), ...]
         sender = CommandSubmitter('test', 'a')
         fake_cmd = [(sender, 'testcmd -a')]
-        interfaces['test'].add_command_list(fake_cmd)
+        interfaces.get('test').add_command_list(fake_cmd)
         default_process.called = 0
         command_server.start(self.parser, ['test'])
         threading.Event().wait(.5)
@@ -114,7 +114,7 @@ class TestCmdServer:
             (sender_b, 'testcmd -b'),
             (sender_c, 'testcmd -c'),
         ]
-        interfaces['test'].add_command_list(fake_cmd)
+        interfaces.get('test').add_command_list(fake_cmd)
         command_server.start(self.parser, ['test'])
         default_process.called = 0
         threading.Event().wait(.5)
@@ -138,14 +138,14 @@ class TestCmdServer:
         fake_cmd = [
             (sender_a, 'some_unknown_words'),
         ]
-        interfaces['test'].reset()
-        interfaces['test'].add_command_list(fake_cmd)
+        interfaces.get('test').reset()
+        interfaces.get('test').add_command_list(fake_cmd)
         command_server.start(self.parser, ['test'])
         default_process.called = 0
         threading.Event().wait(.5)
         command_server.stop()
         ok_(default_process.called == 0)
-        ok_('Unknown' in ' '.join(interfaces['test'].msg_queue[sender_a.code]))
+        ok_('Unknown' in ' '.join(interfaces.get('test').msg_queue[sender_a.code]))
 
         # Test multiple unknown commands
         sender_a = CommandSubmitter('test', 'a')
@@ -155,13 +155,13 @@ class TestCmdServer:
             (sender_a, 'testcmd -a'),
             (sender_u, 'some_unknown_cmds'),
         ]
-        interfaces['test'].reset()
-        interfaces['test'].add_command_list(fake_cmd)
+        interfaces.get('test').reset()
+        interfaces.get('test').add_command_list(fake_cmd)
         command_server.start(self.parser, ['test'])
         default_process.called = 0
         threading.Event().wait(.5)
         command_server.stop()
-        unknown_response = ' '.join(interfaces['test'].msg_queue[sender_u.code])
+        unknown_response = ' '.join(interfaces.get('test').msg_queue[sender_u.code])
         ok_(unknown_response.count('Unknown') == 2)
         ok_(default_process.called == 1)
 
@@ -170,6 +170,7 @@ class TestCmdServer:
             ok_(False)  # should not reach here
 
         lap = LinotArgParser('testcmd', self.parser, default_process)
+
         def cmd_checker(match_list, cmd, sender):
             ok_('somechannel' in match_list)
             ok_(len(match_list) == 1)
@@ -182,7 +183,7 @@ class TestCmdServer:
         fake_cmd = [
             (sender, 'www.twitch.tv/somechannel')
         ]
-        interfaces['test'].add_command_list(fake_cmd)
+        interfaces.get('test').add_command_list(fake_cmd)
         command_server.start(self.parser, ['test'])
         threading.Event().wait(.5)
         command_server.stop()

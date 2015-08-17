@@ -8,7 +8,6 @@ from line import LineContact
 from linot import config
 from linot import logger
 from linot.base_interface import BaseInterface
-from linot import interface_list as interfaces
 from linot.command_submitter import CommandSubmitter
 logger = logger.getLogger(__name__)
 
@@ -34,8 +33,9 @@ class LineClientP(LineClient):
 
 
 class LineInterface(BaseInterface):
+    NAME = 'line'
+
     def __init__(self):
-        BaseInterface.__init__(self, 'line')
         self._client = LineClientP(
             config['interface']['line']['account'],
             config['interface']['line']['password']
@@ -82,5 +82,3 @@ class LineInterface(BaseInterface):
         self._client.lock.acquire(True)
         recvr.sendMessage(msg)
         self._client.lock.release()
-
-interfaces.register(LineInterface)

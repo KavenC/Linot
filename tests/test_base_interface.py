@@ -6,10 +6,10 @@ from linot.base_interface import BaseInterface
 
 class TestBaseInterface:
     def setUp(self):
-        self.interface = BaseInterface('testtest')
+        self.interface = BaseInterface()
 
     def test_name(self):
-        ok_(self.interface.NAME == 'testtest')
+        ok_(self.interface.NAME is None)
 
     @raises(NotImplementedError)
     def test_polling_command(self):
@@ -22,3 +22,8 @@ class TestBaseInterface:
     @raises(NotImplementedError)
     def test_get_display_name(self):
         self.interface.get_display_name(None)
+
+    @raises(ValueError)
+    def test_sublcass_no_name(self):
+        class ErrorSubClass(BaseInterface):
+            pass

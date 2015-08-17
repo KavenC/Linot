@@ -3,14 +3,14 @@ from collections import defaultdict
 from nose.tools import ok_
 
 from linot.command_submitter import CommandSubmitter
-from linot.interface_list import interface_list as interfaces
+import linot.interfaces as interfaces
 
 
 class TestCommandSubmitter:
     def setUp(self):
         self.sender = CommandSubmitter('test', 'sender')
-        interfaces['test'].reset()
-        self.interface = interfaces['test']
+        interfaces.get('test').reset()
+        self.interface = interfaces.get('test')
 
     def test_code(self):
         ok_(self.sender.code == 'sender')
