@@ -57,4 +57,4 @@ class TestIntrefaces:
         os.remove(os.path.join(path, 'del_me_interface.py'))
         os.remove(os.path.join(path, 'del_me_interface.pyc'))
         ok_(error)
-
+        reload(interfaces)  # clean up mess
