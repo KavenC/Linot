@@ -1,14 +1,17 @@
-class NameAttrEnforcer(type):
+class AttrEnforcer(type):
     def __init__(cls, name, bases, attrs):
-        if 'NAME' not in attrs:
-            raise ValueError("Interface class: '{}' doesn't have NAME attribute.".format(name))
+        chk_list = ['NAME', 'SERVER']
+        for attr in chk_list:
+            if attr not in attrs:
+                raise ValueError("Interface class: '{}' doesn't have {} attribute.".format(name, attr))
         type.__init__(cls, name, bases, attrs)
 
 
 class BaseInterface:
     """Subclass must defined NAME class variable"""
-    __metaclass__ = NameAttrEnforcer
+    __metaclass__ = AttrEnforcer
     NAME = None
+    SERVER = True
 
     def polling_command(self):
         """Blocking polling command input"""

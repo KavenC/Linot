@@ -1,6 +1,7 @@
 import pkgutil
 import os
 import inspect
+import sys
 
 from linot.base_interface import BaseInterface
 from linot import logger
@@ -24,6 +25,9 @@ def find_and_import_interface_class(ifmod):
     for name, obj in inspect.getmembers(ifmod):
         if inspect.isclass(obj) and issubclass(obj, BaseInterface) and obj.NAME is not None:
             logger.debug('Found interface class: ' + str(obj))
+            if obj.NAME == 'test' and 'nose' not in sys.modules:  # pragma: no cover
+                continue  # skip test interface if we are not running test sutie
+
             if obj.NAME in class_dict:
                 raise NameError('Interface name conflict: '.format(class_dict[obj.NAME], obj))
             else:

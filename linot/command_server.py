@@ -71,7 +71,8 @@ def start(parser, iflist=interfaces.avail()):
     # command
     global server_threads
     server_threads = []  # if restarted, clear all old threads
-    for interface in iflist:
+    server_if_list = [x for x in iflist if interfaces.class_dict[x].SERVER]
+    for interface in server_if_list:
         thread = CmdServer(parser, interfaces.get(interface))
         server_threads.append(thread)
         thread.start()

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Example interface implementation for testing"""
-import sys
 from collections import defaultdict
 
 from linot.base_interface import BaseInterface
@@ -8,6 +7,7 @@ from linot.base_interface import BaseInterface
 
 class TestInterface(BaseInterface):
     NAME = 'test'
+    SERVER = True
 
     def __init__(self):
         self.reset()
@@ -42,7 +42,3 @@ class TestInterface(BaseInterface):
 
     def set_polling_commad_callback(self, func):
         self.polling_callback = func
-
-# register interface only when runnig testcases with nose
-if 'nose' not in sys.modules:
-    TestInterfaces = None  # avoid being imported into interface list

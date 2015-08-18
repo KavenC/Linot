@@ -34,6 +34,7 @@ class LineClientP(LineClient):
 
 class LineInterface(BaseInterface):
     NAME = 'line'
+    SERVER = True
 
     def __init__(self):
         self._client = LineClientP(
