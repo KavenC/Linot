@@ -1,6 +1,8 @@
 # Linot
 [![Join the chat at https://gitter.im/KavenC/Linot](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/KavenC/Linot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)<br>
-Linot is a chat bot for [LINE](http://line.me/)&trade; App. It provides services to user through the LINE message interfaces. 
+Linot is a chat bot for [LINE](http://line.me/)&trade; App. It provides services to user through the LINE message interfaces.
+
+Contact: leave message on gitter or [twitter@nevak](https://twitter.com/nevak)
 
 ## Services
 ###  TwitchNotifier
