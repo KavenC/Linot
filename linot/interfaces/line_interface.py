@@ -28,7 +28,7 @@ class LineClientP(LineClient):
     def find_contact_by_id(self, userid):
         contacts = self._getContacts([userid])
         if len(contacts) == 0:
-            raise Exception('getContacts from server failed, id:' + str(userid))
+            raise ValueError('getContacts from server failed, id:' + str(userid))
         return LineContact(self, contacts[0])
 
 

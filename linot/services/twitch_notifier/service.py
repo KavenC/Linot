@@ -90,12 +90,12 @@ class Checker(Thread):
 
 
 class Service(ServiceBase):
+    CMD = 'twitch'
     SUB_FILE = 'twitch_sublist.p'
     CHECK_PERIOD = 300
 
     def __init__(self):
         ServiceBase.__init__(self)
-        self.cmd = 'twitch'
         self._sublist_lock = Lock()
         self._twitch = TwitchEngine()
 

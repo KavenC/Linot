@@ -3,15 +3,27 @@ import sys
 from linot.arg_parser import LinotArgParser
 
 
+class AttrEnforcer(type):
+    def __init__(cls, name, bases, attrs):
+        chk_list = ['CMD']
+        for attr in chk_list:
+            if attr not in attrs:
+                raise ValueError("Interface class: '{}' doesn't have {} attribute.".format(name, attr))
+        type.__init__(cls, name, bases, attrs)
+
+
 class ServiceBase:
+    __metaclass__ = AttrEnforcer
+    CMD = 'test'
+
     def __init__(self):
         self._started = False
 
     def __str__(self):
-        return '{} ({})'.format(sys.modules[self.__module__].__package__, self.cmd)
+        return '{} ({})'.format(sys.modules[self.__module__].__package__, self.CMD)
 
     def setup(self, parser):
-        ap = LinotArgParser(self.cmd, parser, self._cmd_process)
+        ap = LinotArgParser(self.CMD, parser, self._cmd_process)
         self._setup_argument(ap)
 
     def is_start(self):
