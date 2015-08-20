@@ -20,7 +20,8 @@ class TestInterface(BaseInterface):
         self.command_queue = []
 
     def send_message(self, receiver, msg):
-        self.msg_queue[receiver.code].append(msg)
+        self.msg_queue[receiver.code].append(msg)  # compatibility
+        self.msg_queue[receiver].append(msg)
         return True
 
     def get_display_name(self, submitter):

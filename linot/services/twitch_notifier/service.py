@@ -31,12 +31,11 @@ class Checker(Thread):
         while(not self._stop.is_set()):
             logger.debug('Wait polling {} sec.'.format(self._period))
             self._polling.wait(self._period)
-            logger.debug('Polling event is triggered.')
             self._polling.clear()
             logger.debug('Try get live channels')
             current_live_channels = self._twitch.get_live_channels()
-            logger.debug('Live Channels: ' + str(current_live_channels.viewkeys()))
             local_live_channels = self.get_live_channels()
+            logger.debug('Live Channels: ' + str(current_live_channels.viewkeys()))
             logger.debug('Previous live Channels: ' + str(local_live_channels.viewkeys()))
             off_channels = local_live_channels.viewkeys() - current_live_channels.viewkeys()
             for ch in off_channels:
@@ -152,19 +151,18 @@ class Service(ServiceBase):
         # so that we can check if they are online use streams/followed API
         not_found = []
         for ch in chs:
+            check_name = ch.lower()
             # reduce api invocation
-            # TODO fix this
-            if ch in self._sublist[sender]:  # pragma: no cover
+            if check_name in self._sublist[sender]:  # pragma: no cover
                 continue
             ch_disp_name, stat = self._twitch.follow_channel(ch)
             if stat is False:
                 not_found.append(ch)
             else:
                 self._sublist_lock.acquire(True)
-                if ch_disp_name not in self._sublist[sender]:  # TODO fix this
-                    self._sublist[sender].append(ch_disp_name)
+                self._sublist[sender].append(check_name)
                 self._sublist_lock.release()
-                self._channel_sub_count[ch_disp_name] += 1
+                self._channel_sub_count[check_name] += 1
                 pickle.dump(self._sublist, open(self.SUB_FILE, 'wb+'))
 
         if len(not_found) > 0:
@@ -176,16 +174,17 @@ class Service(ServiceBase):
         # Handles user request for unsubscribing channels
         not_found = []
         for ch in chs:
+            check_name = ch.lower()
             self._sublist_lock.acquire(True)
             try:
-                self._sublist[sender].remove(ch)
+                self._sublist[sender].remove(check_name)
             except ValueError:
                 not_found.append(ch)
                 self._sublist_lock.release()
                 continue
             self._sublist_lock.release()
-            self._channel_sub_count[ch] -= 1
-            if self._channel_sub_count[ch] <= 0:
+            self._channel_sub_count[check_name] -= 1
+            if self._channel_sub_count[check_name] <= 0:
                 self._twitch.unfollow_channel(ch)
                 self._channel_sub_count.pop(ch, None)
         if len(self._sublist[sender]) == 0:
@@ -204,11 +203,12 @@ class Service(ServiceBase):
         print('Your subscribed channels:', file=msg)
         live_channels = self._check_thread.get_live_channels()
         for ch in self._sublist[sender]:
-            if ch in live_channels:
+            if ch in [x.lower() for x in live_channels]:
                 stat = '[LIVE]'
             else:
                 stat = '[OFF]'
-            print('{}\t{}'.format(stat, ch) + '\n', file=msg)
+            display_name = self._twitch.get_channel_info(ch)['display_name']
+            print('{}\t{}'.format(stat, display_name) + '\n', file=msg)
         sender.send_message(msg.getvalue())
 
     def _refresh(self, value, sender):
@@ -226,7 +226,7 @@ class Service(ServiceBase):
                 print(unicode(user), file=msg)
                 print(u'Channels:', file=msg)
                 for ch in self._sublist[user]:
-                    print(ch, end=u', ', file=msg)
+                    print(unicode(ch), end=u', ', file=msg)
                 print(u'', file=msg)
                 print(u'----------------------------', file=msg)
             sender.send_message(msg.getvalue())
