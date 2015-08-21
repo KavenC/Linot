@@ -104,7 +104,7 @@ class Service(ServiceBase):
         cmd_group.add_argument('-unsubscribe', nargs='+', func=self._unsubscribe,
                                help='Unsubscribe channels')
         cmd_group.add_argument('-listchannel', action='store_true', func=self._list_channel,
-                               help='List channels you\'ve subscribed')
+                               help="List channels you've subscribed")
         cmd_group.add_argument('-refresh', action='store_true', func=self._refresh,
                                help=argparse.SUPPRESS)
         cmd_group.add_argument('-listusers', action='store_true', func=self._list_users,
@@ -149,6 +149,11 @@ class Service(ServiceBase):
         # Handles user request for subscribing channels
         # We actually let the LinotServant to follow these channels
         # so that we can check if they are online use streams/followed API
+
+        # prompt a message to let user know i am still alive...
+        sender.send_message('Processing ...')
+        msg = io.BytesIO()
+
         not_found = []
         for ch in chs:
             check_name = ch.lower()
@@ -166,11 +171,16 @@ class Service(ServiceBase):
                 pickle.dump(self._sublist, open(self.SUB_FILE, 'wb+'))
 
         if len(not_found) > 0:
-            sender.send_message('Channel not found: ' + ' '.join(not_found))
-        sender.send_message('Done')
+            print('Channel not found: ' + ' '.join(not_found), file=msg)
+        print('Done', file=msg)
+        sender.send_message(msg.getvalue())
         return
 
     def _unsubscribe(self, chs, sender):
+        # prompt a message to let user know i am still alive...
+        sender.send_message('Processing ...')
+        msg = io.BytesIO()
+
         # Handles user request for unsubscribing channels
         not_found = []
         for ch in chs:
@@ -194,11 +204,14 @@ class Service(ServiceBase):
 
         pickle.dump(self._sublist, open(self.SUB_FILE, 'wb+'))
         if len(not_found) > 0:
-                sender.send_message('Channel not found: ' + ' '.join(not_found))
-        sender.send_message('Done')
+            print('Channel not found: ' + ' '.join(not_found), file=msg)
+        print('Done', file=msg)
+        sender.send_message(msg.getvalue())
         return
 
     def _list_channel(self, value, sender):
+        # prompt a message to let user know i am still alive...
+        sender.send_message('Processing ...')
         msg = io.BytesIO()
         print('Your subscribed channels:', file=msg)
         live_channels = self._check_thread.get_live_channels()
@@ -208,7 +221,7 @@ class Service(ServiceBase):
             else:
                 stat = '[OFF]'
             display_name = self._twitch.get_channel_info(ch)['display_name']
-            print('{}\t{}'.format(stat, display_name) + '\n', file=msg)
+            print('{}\t{}'.format(stat, display_name), file=msg)
         sender.send_message(msg.getvalue())
 
     def _refresh(self, value, sender):
