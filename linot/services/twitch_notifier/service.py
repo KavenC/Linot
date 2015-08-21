@@ -23,41 +23,47 @@ class Checker(Thread):
         self._twitch = twitch
         self._get_sublist = get_sublist
         self._status_lock = Lock()
+        self._logger = logger.getChild(self.__class__.__name__)
 
     def run(self):
-        logger.info('Twitch Checker is started')
+        self._logger.info('Twitch Checker is started')
         # Skip 1st notify if channels are already live before plugin load
         self._set_live_channels(self._twitch.get_live_channels())
+
         while(not self._stop.is_set()):
-            logger.debug('Wait polling {} sec.'.format(self._period))
+            self._logger.debug('Wait polling {} sec.'.format(self._period))
             self._polling.wait(self._period)
             self._polling.clear()
-            logger.debug('Try get live channels')
+
+            self._logger.debug('Try get live channels')
             current_live_channels = self._twitch.get_live_channels()
             local_live_channels = self.get_live_channels()
-            logger.debug('Live Channels: ' + str(current_live_channels.viewkeys()))
-            logger.debug('Previous live Channels: ' + str(local_live_channels.viewkeys()))
+
             off_channels = local_live_channels.viewkeys() - current_live_channels.viewkeys()
             for ch in off_channels:
                 # TODO do we have to notify user the channel went off?
                 del local_live_channels[ch]
-            new_live_channels = current_live_channels.viewkeys() - local_live_channels.viewkeys()
+
             # Send live notifications to subcribers
+            new_live_channels = current_live_channels.viewkeys() - local_live_channels.viewkeys()
+            self._logger.debug('New live channels:' + str(new_live_channels))
             for ch in new_live_channels:
                 local_live_channels[ch] = current_live_channels[ch]
                 local_sublist = self._get_sublist()
+                check_name = ch.lower()
                 for user in local_sublist:
-                    if ch in local_sublist[user]:
-                        msg = io.BytesIO()
-                        print('{} is now streamming!!'.format(ch), file=msg)
-                        print('msg = [Title] {}'.format(current_live_channels[ch]['status']), file=msg)
-                        print('[Playing] {}'.format(current_live_channels[ch]['game']), file=msg)
+                    if check_name in local_sublist[user]:
+                        msg = io.StringIO()
+                        print(u'{} is now streamming!!'.format(unicode(ch)), file=msg)
+                        print(u'[Title] {}'.format(unicode(current_live_channels[ch]['status'])), file=msg)
+                        print(u'[Playing] {}'.format(unicode(current_live_channels[ch]['game'])), file=msg)
                         print(current_live_channels[ch]['url'], file=msg)
                         user.send_message(msg.getvalue())
+
             self._set_live_channels(local_live_channels)
 
         self._stop.clear()
-        logger.info('Twitch Checker is stopped')
+        self._logger.info('Twitch Checker is stopped')
 
     def _set_live_channels(self, ch_list):
         self._status_lock.acquire(True)
@@ -65,7 +71,7 @@ class Checker(Thread):
         self._status_lock.release()
 
     def refresh(self):
-        logger.debug('Trigger refresh')
+        self._logger.debug('Trigger refresh')
         self._polling.set()
 
     def get_live_channels(self):
@@ -75,13 +81,13 @@ class Checker(Thread):
         return ch_stat
 
     def async_stop(self):
-        logger.debug('stop is called')
+        self._logger.debug('stop is called')
         self._polling.set()
         self._stop.set()
 
     def stop(self):
         self.async_stop()
-        logger.debug('waiting for thread end')
+        self._logger.debug('waiting for thread end')
         self.join()
 
     def is_stopped(self):
@@ -195,7 +201,9 @@ class Service(ServiceBase):
             self._sublist_lock.release()
             self._channel_sub_count[check_name] -= 1
             if self._channel_sub_count[check_name] <= 0:
-                self._twitch.unfollow_channel(ch)
+                # maybe we can try to not unfollow, so that we don't keep
+                # generating follow message to the caster
+                # self._twitch.unfollow_channel(ch)
                 self._channel_sub_count.pop(ch, None)
         if len(self._sublist[sender]) == 0:
             self._sublist_lock.acquire(True)

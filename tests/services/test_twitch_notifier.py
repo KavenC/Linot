@@ -176,26 +176,26 @@ class TestChecker:
         ok_(len(interfaces.get('test').msg_queue[fake_sender2]) == 0)
 
         self.twitch.live_ch_list = {
-            'testch1': {
-                'status': 'test_status',
-                'game': 'test_game',
-                'url': 'test_url'
+            'TESTCH1': {
+                'status': u'test_status',
+                'game': u'test_game',
+                'url': u'test_url'
             }
         }
         self.checker.refresh()
         threading.Event().wait(1)
         self.checker.stop()
-        ok_('testch1' in ' '.join(interfaces.get('test').msg_queue[fake_sender]),
+        ok_('TESTCH1' in ' '.join(interfaces.get('test').msg_queue[fake_sender]),
             interfaces.get('test').msg_queue[fake_sender])
-        ok_('testch1' not in ' '.join(interfaces.get('test').msg_queue[fake_sender2]),
+        ok_('TESTCH1' not in ' '.join(interfaces.get('test').msg_queue[fake_sender2]),
             interfaces.get('test').msg_queue[fake_sender2])
 
     def test_channel_offline(self):
         self.twitch.live_ch_list = {
             'testch1': {
-                'status': 'test_status',
-                'game': 'test_game',
-                'url': 'test_url'
+                'status': u'test_status',
+                'game': u'test_game',
+                'url': u'test_url'
             }
         }
         fake_sender = CommandSubmitter('test', 'fake_sender')
@@ -211,9 +211,9 @@ class TestChecker:
         # simulate channel goes live
         self.twitch.live_ch_list = {
             'testch1': {
-                'status': 'test_status',
-                'game': 'test_game',
-                'url': 'test_url'
+                'status': u'test_status',
+                'game': u'test_game',
+                'url': u'test_url'
             }
         }
         self.checker.refresh()
