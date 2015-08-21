@@ -518,6 +518,23 @@ class TestService:
         self.service._refresh(True, CommandSubmitter('test', 'test_admin'))
         ok_(self_ret.val is True)
 
+    def test_list_users_no_user(self):
+        # issue #10, list user hit exception while there is no user
+        config['interface']['test'] = {'admin_id': 'test_admin'}
+        try:
+            os.remove(self.service.SUB_FILE)
+        except OSError:
+            pass
+
+        self.service.start()
+        threading.Event().wait(.1)
+        self.service.stop()
+
+        fake_sender = CommandSubmitter('test', 'test_admin')
+        self.service._list_users(True, fake_sender)
+        # check there is a response to user
+        ok_(len(''.join(interfaces.get('test').msg_queue[fake_sender])) > 0)
+
     def test_list_users(self):
         self.test_subscribe_one()
         self.service._subscribe(['testch2'], CommandSubmitter('test', 'fake_sender2'))

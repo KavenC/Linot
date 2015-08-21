@@ -229,6 +229,6 @@ class Service(ServiceBase):
                     print(unicode(ch), end=u', ', file=msg)
                 print(u'', file=msg)
                 print(u'----------------------------', file=msg)
+            print(u'Done', file=msg)  # make sure we are sending something to user
             sender.send_message(msg.getvalue())
-            sender.send_message('Done')
         return

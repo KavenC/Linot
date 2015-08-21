@@ -20,6 +20,10 @@ class TestInterface(BaseInterface):
         self.command_queue = []
 
     def send_message(self, receiver, msg):
+        # sending zero length string to some interface may cause error
+        # we check them here while runnig test suite
+        assert len(msg) > 0
+
         self.msg_queue[receiver.code].append(msg)  # compatibility
         self.msg_queue[receiver].append(msg)
         return True
