@@ -5,7 +5,7 @@ import sys
 
 from linot.base_interface import BaseInterface
 from linot import logger
-logger = logger.getLogger(__name__)
+logger = logger.get().getLogger(__name__)
 
 class_dict = {}
 instance_dict = {}

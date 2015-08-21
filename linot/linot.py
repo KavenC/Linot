@@ -7,7 +7,7 @@ import config
 import command_server
 from arg_parser import LinotArgParser, LinotParser
 import logger
-logger = logger.getLogger(__name__)
+logger = logger.get().getLogger(__name__)
 
 
 service_instances = {}

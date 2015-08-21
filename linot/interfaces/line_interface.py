@@ -9,7 +9,7 @@ from linot import config
 from linot import logger
 from linot.base_interface import BaseInterface
 from linot.command_submitter import CommandSubmitter
-logger = logger.getLogger(__name__)
+logger = logger.get().getLogger(__name__)
 
 
 class LineClientP(LineClient):

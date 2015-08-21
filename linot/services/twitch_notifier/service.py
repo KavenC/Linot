@@ -11,7 +11,7 @@ import linot.config as config
 from .twitch_engine import TwitchEngine
 from linot.services.service_base import ServiceBase
 import linot.logger
-logger = linot.logger.getLogger(__name__)
+logger = linot.logger.get().getLogger(__name__)
 
 
 class Checker(Thread):
@@ -85,7 +85,7 @@ class Checker(Thread):
         self.join()
 
     def is_stopped(self):
-        return self._stop.isSet()
+        return self._stop.is_set()
 
 
 class Service(ServiceBase):

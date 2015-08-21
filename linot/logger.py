@@ -38,4 +38,8 @@ config = {
 logging.config.dictConfig(config)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 logging.getLogger('requests').setLevel(logging.WARNING)
-sys.modules[__name__] = logging
+
+
+def get():
+    return logging
+# sys.modules[__name__] = logging

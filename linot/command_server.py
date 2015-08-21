@@ -2,7 +2,7 @@ from threading import Thread, Event
 
 import interfaces
 import logger
-logger = logger.getLogger(__name__)
+logger = logger.get().getLogger(__name__)
 
 
 class CmdServer(Thread):

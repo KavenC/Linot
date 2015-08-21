@@ -7,7 +7,7 @@ import sys
 
 import linot.config as config
 import linot.logger
-logger = linot.logger.getLogger(__name__)
+logger = linot.logger.get().getLogger(__name__)
 
 
 class TwitchRequests:  # pragma: no cover
@@ -81,7 +81,7 @@ class TwitchEngine:
 
     USER = config['service']['twitch']['user']
 
-    def get_sub_channels(self):
+    def get_subscribed_channels(self):
         json_channels_list = TwitchRequests.multi_get('/users/' + self.USER + '/follows/channels')
         channels = {}
         for json_channels in json_channels_list:
@@ -117,7 +117,7 @@ class TwitchEngine:
 
     def get_channel_info(self, channel):
         json_streams = TwitchRequests.get('/channels/{}/'.format(channel))
-        if 'error' in json_streams:
+        if 'display_name' not in json_streams:
             return None
         else:
             return json_streams

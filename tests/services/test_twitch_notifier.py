@@ -3,39 +3,17 @@ import inspect
 import pickle
 import threading
 import os
+import requests
 from collections import defaultdict
 
 from nose.tools import ok_
 
 from linot import interfaces
 from linot.command_submitter import CommandSubmitter
-from linot.services.twitch_notifier.service import Service
-from linot.arg_parser import LinotArgParser, LinotParser
+from linot.services.twitch_notifier.service import Service, Checker
+from linot.services.twitch_notifier.twitch_engine import TwitchEngine
+from linot.arg_parser import LinotParser
 from linot import config
-
-
-class MockSender:
-    def __init__(self, name):
-        self.id = name
-
-
-class MockLine:
-    def __init__(self):
-        self.msg_recv = []
-        self.msg_text = []
-        self.contatcs = {}
-
-    def sendMessageToClient(self, recv, msg):
-        self.msg_recv.append(recv)
-        self.msg_text.append(msg)
-
-    def getContactById(self, user_id):
-        return self.contacts[user_id]
-
-    def sendMessageToId(self, id, msg):
-        client = self.getContactById(id)
-        self.sendMessageToClient(client, msg)
-        return
 
 
 class MockTwitchEngine:
@@ -71,6 +49,178 @@ class MockTwitchEngine:
         # case as input
         for ch in ch_list:
             self.live_ch_list[ch.swapcase()] = ch_list[ch]
+
+
+class TestTwitchEngine:
+    TWITCH_REST = 'https://api.twitch.tv/kraken'
+
+    def setUp(self):
+        self.twitch = TwitchEngine()
+
+    def test_subscribed_channels(self):
+        # twitch user should be following more than 25 users before this test
+        followed_channels = self.twitch.get_subscribed_channels()
+        ok_(len(followed_channels) > 25,
+            'twitch user should be following more than'
+            '25 users before running this test')  # to make sure we have tested multiget
+        ok_(len(set(followed_channels)) == len(followed_channels))
+        for ch in followed_channels:
+            expect_url = 'http://www.twitch.tv/'+ch.lower()
+            ok_(followed_channels[ch]['url'] == expect_url,
+                '{} <-> {}'.format(followed_channels[ch]['url'], expect_url))
+
+    def test_get_live_channels(self):
+        # This is a tricky one, not sure how to properly test it..
+        test_channel_count = 10
+        live_channels = self.twitch.get_live_channels()
+        error_count = 0
+        test_count = 0
+        for ch in live_channels:
+            ret_json = requests.get(self.TWITCH_REST+'/streams/'+ch).json()
+            try:
+                ok_(ret_json['stream']['channel']['display_name'] == ch)
+            except KeyError:
+                error_count += 1
+            test_count += 1
+            if test_count >= test_channel_count:
+                break
+        # there is time difference between get live and check live
+        # it is possible that channel went offline between these 2 api calls
+        # so we just expect 80% of tested channels are really live on the
+        # 2nd api call
+        ok_((float(error_count) / test_count) < 0.20, 'test:{}, error:{}'.format(test_count, error_count))
+
+    def test_follow_unfollow_channel(self):
+        self.twitch.unfollow_channel('kaydada')
+        followed_channels = self.twitch.get_subscribed_channels()
+        ok_('KayDaDa' not in followed_channels)
+        self.twitch.follow_channel('kaydada')
+        followed_channels = self.twitch.get_subscribed_channels()
+        ok_('KayDaDa' in followed_channels)
+        ret = self.twitch.unfollow_channel('kaydada')
+        ok_(ret is True)
+        followed_channels = self.twitch.get_subscribed_channels()
+        ok_('KayDaDa' not in followed_channels)
+        name, ret = self.twitch.follow_channel('kaydada2')
+        ok_(ret is False)
+        ret = self.twitch.unfollow_channel('kaydada2')
+        ok_(ret is False)
+        name, ret = self.twitch.follow_channel('kaydada')
+        ok_(ret is True)
+
+    def test_get_channel_info(self):
+        info = self.twitch.get_channel_info('kaydada')
+        ok_(info['display_name'] == 'KayDaDa')
+
+        info = self.twitch.get_channel_info('kaydada_no_this_guy')
+        ok_(info is None, info)
+
+
+class TestChecker:
+    def setUp(self):
+        self.twitch = MockTwitchEngine()
+        self.checker = Checker(300, self.twitch, self.get_sublist)
+        self.sublist = {}
+        interfaces.get('test').reset()
+
+    def get_sublist(self):
+        return self.sublist
+
+    def test_stop_on_processing(self):
+        self.checker.start()
+        threading.Event().wait(1)
+        self.checker.refresh()
+
+        def locker():
+            locker.event.wait()
+            return {}
+        locker.event = threading.Event()
+        self.checker._twitch.get_live_channels = locker
+        threading.Event().wait(2)  # expect checker wait on getLiveChannels
+        locker.event.set()
+
+        self.checker.async_stop()
+        ok_(self.checker.is_stopped())
+        self.checker.join(5)
+        ok_(not self.checker.is_alive())
+
+    def test_skip_already_lived_on_boot(self):
+        self.twitch.live_ch_list = {
+            'testch1': {
+                'status': 'test_status',
+                'game': 'test_game',
+                'url': 'test_url'
+            }
+        }
+        fake_sender = CommandSubmitter('test', 'fake_sender')
+        self.sublist = {fake_sender: ['testch1']}
+
+        self.checker.start()
+        threading.Event().wait(1)
+        self.checker.stop()
+        ok_(len(interfaces.get('test').msg_queue[fake_sender]) == 0)
+
+    def test_live_notification(self):
+        fake_sender = CommandSubmitter('test', 'fake_sender')
+        fake_sender2 = CommandSubmitter('test', 'fake_sender2')
+        self.sublist = {
+            fake_sender: ['testch1'],
+            fake_sender2: ['testch2'],
+        }
+
+        self.checker.start()
+        threading.Event().wait(1)
+        self.checker.refresh()
+        threading.Event().wait(1)
+        ok_(len(interfaces.get('test').msg_queue[fake_sender]) == 0)
+        ok_(len(interfaces.get('test').msg_queue[fake_sender2]) == 0)
+
+        self.twitch.live_ch_list = {
+            'testch1': {
+                'status': 'test_status',
+                'game': 'test_game',
+                'url': 'test_url'
+            }
+        }
+        self.checker.refresh()
+        threading.Event().wait(1)
+        self.checker.stop()
+        ok_('testch1' in ' '.join(interfaces.get('test').msg_queue[fake_sender]),
+            interfaces.get('test').msg_queue[fake_sender])
+        ok_('testch1' not in ' '.join(interfaces.get('test').msg_queue[fake_sender2]),
+            interfaces.get('test').msg_queue[fake_sender2])
+
+    def test_channel_offline(self):
+        self.twitch.live_ch_list = {
+            'testch1': {
+                'status': 'test_status',
+                'game': 'test_game',
+                'url': 'test_url'
+            }
+        }
+        fake_sender = CommandSubmitter('test', 'fake_sender')
+        self.sublist = {fake_sender: ['testch1']}
+        self.checker.start()
+        threading.Event().wait(1)
+        self.twitch.live_ch_list = {}
+        self.checker.refresh()
+        threading.Event().wait(1)
+        # no message should be sent
+        ok_(len(interfaces.get('test').msg_queue[fake_sender]) == 0)
+
+        # simulate channel goes live
+        self.twitch.live_ch_list = {
+            'testch1': {
+                'status': 'test_status',
+                'game': 'test_game',
+                'url': 'test_url'
+            }
+        }
+        self.checker.refresh()
+        threading.Event().wait(1)
+        self.checker.stop()
+        ok_('testch1' in ' '.join(interfaces.get('test').msg_queue[fake_sender]),
+            interfaces.get('test').msg_queue[fake_sender])
 
 
 class TestService:

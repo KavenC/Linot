@@ -13,7 +13,7 @@ import re
 from io import BytesIO
 
 import logger
-logger = logger.getLogger(__name__)
+logger = logger.get().getLogger(__name__)
 
 
 class LinotParser(ArgumentParser):
