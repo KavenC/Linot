@@ -109,11 +109,15 @@ class Service(ServiceBase):
 
     def _setup_argument(self, cmd_group):
         cmd_group.add_argument('-subscribe', nargs='+', func=self._subscribe,
-                               help='Subscribe channels')
+                               help='Subscribe channels and receive notification when channel goes live.\n'
+                               'ex: {} -subscribe kaydada'.format(self.CMD))
         cmd_group.add_argument('-unsubscribe', nargs='+', func=self._unsubscribe,
-                               help='Unsubscribe channels')
+                               help='Unsubscribe channels.\n'
+                               'ex: {} -unsubscribe kaydada'.format(self.CMD))
         cmd_group.add_argument('-listchannel', action='store_true', func=self._list_channel,
                                help="List channels you've subscribed")
+
+        # below, admin only
         cmd_group.add_argument('-refresh', action='store_true', func=self._refresh,
                                help=argparse.SUPPRESS)
         cmd_group.add_argument('-listusers', action='store_true', func=self._list_users,
