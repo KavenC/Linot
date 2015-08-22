@@ -497,6 +497,19 @@ class TestService:
         ok_('testch2' in check_msg.lower())
         ok_('testch1' in check_msg.lower())
 
+    def test_list_channel_invalidate_cache(self):
+        self.service._twitch.set_live_channel_list({'testch2': {'display_name': 'TESTCH2'}})
+        self.test_subscribe_multi()
+        self.service._channel_name_cache.clear()
+
+        fake_sender = CommandSubmitter('test', 'fake_sender')
+        self.service._list_channel(True, fake_sender)
+        ok_(' '.join(interfaces.get('test').msg_queue[fake_sender]).count('LIVE') == 1)
+
+        check_msg = ' '.join(interfaces.get('test').msg_queue[fake_sender])
+        ok_('testch2' in check_msg.lower())
+        ok_('testch1' in check_msg.lower())
+
     def test_refresh(self):
         # check admin only
         self.service.start()

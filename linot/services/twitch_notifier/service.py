@@ -7,6 +7,8 @@ import re
 import copy
 import io
 
+from repoze.lru import LRUCache
+
 import linot.config as config
 from .twitch_engine import TwitchEngine
 from linot.services.service_base import ServiceBase
@@ -99,10 +101,11 @@ class Service(ServiceBase):
     SUB_FILE = 'twitch_sublist.p'
     CHECK_PERIOD = 300
 
-    def __init__(self):
+    def __init__(self, name_cache_size=512):
         ServiceBase.__init__(self)
         self._sublist_lock = Lock()
         self._twitch = TwitchEngine()
+        self._channel_name_cache = LRUCache(name_cache_size)
 
     def _setup_argument(self, cmd_group):
         cmd_group.add_argument('-subscribe', nargs='+', func=self._subscribe,
@@ -174,6 +177,7 @@ class Service(ServiceBase):
                 self._sublist[sender].append(check_name)
                 self._sublist_lock.release()
                 self._channel_sub_count[check_name] += 1
+                self._channel_name_cache.put(ch_disp_name.lower(), ch_disp_name)
                 pickle.dump(self._sublist, open(self.SUB_FILE, 'wb+'))
 
         if len(not_found) > 0:
@@ -218,17 +222,18 @@ class Service(ServiceBase):
         return
 
     def _list_channel(self, value, sender):
-        # prompt a message to let user know i am still alive...
-        sender.send_message('Processing ...')
         msg = io.BytesIO()
-        print('Your subscribed channels:', file=msg)
+        print('Your subscribed channels are:', file=msg)
         live_channels = self._check_thread.get_live_channels()
         for ch in self._sublist[sender]:
             if ch in [x.lower() for x in live_channels]:
                 stat = '[LIVE]'
             else:
                 stat = '[OFF]'
-            display_name = self._twitch.get_channel_info(ch)['display_name']
+            display_name = self._channel_name_cache.get(ch)
+            if display_name is None:
+                display_name = self._twitch.get_channel_info(ch)['display_name']
+                self._channel_name_cache.put(ch, display_name)
             print('{}\t{}'.format(stat, display_name), file=msg)
         sender.send_message(msg.getvalue())
 
