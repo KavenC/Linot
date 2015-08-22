@@ -114,8 +114,10 @@ class Service(ServiceBase):
         cmd_group.add_argument('-unsubscribe', nargs='+', func=self._unsubscribe,
                                help='Unsubscribe channels.\n'
                                'ex: {} -unsubscribe kaydada'.format(self.CMD))
+        cmd_group.add_argument('-unsuball', action='store_true', func=self._unsub_all,
+                               help="Unsubscribe all channels in Linot. I won't send any notification to you anymore.")
         cmd_group.add_argument('-listchannel', action='store_true', func=self._list_channel,
-                               help="List channels you've subscribed")
+                               help="List channels you've subscribed.")
 
         # below, admin only
         cmd_group.add_argument('-refresh', action='store_true', func=self._refresh,
@@ -157,6 +159,13 @@ class Service(ServiceBase):
         for subr in self._sublist:
             for ch in self._sublist[subr]:
                 self._channel_sub_count[ch] += 1
+
+    def _unsub_all(self, value, sender):
+        # unsubscribe all channels for sender
+        # we can not send self._sublist directly, since unsub operates
+        # self._sublist
+        user_sub = copy.copy(self._sublist[sender])
+        self._unsubscribe(user_sub, sender)
 
     def _subscribe(self, chs, sender):
         # Handles user request for subscribing channels
@@ -212,7 +221,8 @@ class Service(ServiceBase):
                 # maybe we can try to not unfollow, so that we don't keep
                 # generating follow message to the caster
                 # self._twitch.unfollow_channel(ch)
-                self._channel_sub_count.pop(ch, None)
+                self._channel_sub_count.pop(check_name, None)
+
         if len(self._sublist[sender]) == 0:
             self._sublist_lock.acquire(True)
             self._sublist.pop(sender)

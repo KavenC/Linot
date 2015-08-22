@@ -262,6 +262,9 @@ class TestService:
             # -unsubscribe
             ['-unsubscribe test1', '_unsubscribe', set_matching_1],
             ['-unsubscribe test1 test2', '_unsubscribe', set_matching_2],
+            # -unsuball
+            ['-unsuball', '_unsub_all', ret_val],
+            ['-unsuball abc', '_unsub_all', ret_val],
             # -listchannel
             ['-listchannel', '_list_channel', ret_val],
             ['-listchannel abc', '_list_channel', ret_val],
@@ -596,3 +599,26 @@ class TestService:
             'sublist = '+str(self.service._sublist[sender]))
         ok_('LinotServant'.lower() in self.service._sublist[sender],
             'sublist = '+str(self.service._sublist[sender]))
+
+    def test_unsub_all(self):
+        sender = CommandSubmitter('test', 'sender')
+        test_channels = ['testch1', 'testch2', 'testch3']
+        self.service._twitch.set_exists_channel_list(test_channels)
+
+        self.service.setup(self.parser)
+        self.service.start()
+        threading.Event().wait(1)
+        self.service.stop()
+
+        self.service._subscribe(test_channels, sender)
+        self.service._list_channel(True, sender)
+        # make sure subscribe success
+        for ch in test_channels:
+            ok_(ch.lower() in ' '.join(interfaces.get('test').msg_queue[sender]).lower())
+
+        interfaces.get('test').reset()
+
+        self.service._unsub_all(True, sender)
+        self.service._list_channel(True, sender)
+        for ch in test_channels:
+            ok_(ch.lower() not in ' '.join(interfaces.get('test').msg_queue[sender]).lower())
