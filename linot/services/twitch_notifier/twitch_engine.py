@@ -81,10 +81,15 @@ class TwitchEngine:
 
     USER = config['service']['twitch']['user']
 
-    def get_subscribed_channels(self):
-        json_channels_list = TwitchRequests.multi_get('/users/' + self.USER + '/follows/channels')
+    def get_followed_channels(self, user):
+        json_channels_list = TwitchRequests.multi_get('/users/' + user + '/follows/channels')
+
         channels = {}
         for json_channels in json_channels_list:
+            # user not found
+            if 'code' in json_channels and json_channels['code'] == 404:
+                return None
+
             for followed_channel in json_channels['follows']:
                 name = followed_channel['channel']['display_name']
                 channels[name] = followed_channel['channel']

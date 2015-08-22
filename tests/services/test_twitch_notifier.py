@@ -20,6 +20,13 @@ class MockTwitchEngine:
     def __init__(self):
         self.exists_ch_list = []
         self.live_ch_list = {}
+        self.followed_ch_list = {}
+
+    def get_followed_channels(self, user):
+        if user not in self.followed_ch_list:
+            return None
+        else:
+            return self.followed_ch_list[user]
 
     def get_live_channels(self):
         return self.live_ch_list
@@ -57,9 +64,9 @@ class TestTwitchEngine:
     def setUp(self):
         self.twitch = TwitchEngine()
 
-    def test_subscribed_channels(self):
+    def test_get_followed_channels(self):
         # twitch user should be following more than 25 users before this test
-        followed_channels = self.twitch.get_subscribed_channels()
+        followed_channels = self.twitch.get_followed_channels(self.twitch.USER)
         ok_(len(followed_channels) > 25,
             'twitch user should be following more than'
             '25 users before running this test')  # to make sure we have tested multiget
@@ -68,6 +75,10 @@ class TestTwitchEngine:
             expect_url = 'http://www.twitch.tv/'+ch.lower()
             ok_(followed_channels[ch]['url'] == expect_url,
                 '{} <-> {}'.format(followed_channels[ch]['url'], expect_url))
+
+        # test user not found returns None
+        followed_channels = self.twitch.get_followed_channels(self.twitch.USER[:-2])
+        ok_(followed_channels is None)
 
     def test_get_live_channels(self):
         # This is a tricky one, not sure how to properly test it..
@@ -92,14 +103,14 @@ class TestTwitchEngine:
 
     def test_follow_unfollow_channel(self):
         self.twitch.unfollow_channel('kaydada')
-        followed_channels = self.twitch.get_subscribed_channels()
+        followed_channels = self.twitch.get_followed_channels(self.twitch.USER)
         ok_('KayDaDa' not in followed_channels)
         self.twitch.follow_channel('kaydada')
-        followed_channels = self.twitch.get_subscribed_channels()
+        followed_channels = self.twitch.get_followed_channels(self.twitch.USER)
         ok_('KayDaDa' in followed_channels)
         ret = self.twitch.unfollow_channel('kaydada')
         ok_(ret is True)
-        followed_channels = self.twitch.get_subscribed_channels()
+        followed_channels = self.twitch.get_followed_channels(self.twitch.USER)
         ok_('KayDaDa' not in followed_channels)
         name, ret = self.twitch.follow_channel('kaydada2')
         ok_(ret is False)
@@ -265,6 +276,8 @@ class TestService:
             # -unsuball
             ['-unsuball', '_unsub_all', ret_val],
             ['-unsuball abc', '_unsub_all', ret_val],
+            # -subscribe
+            ['-import test1', '_import', set_matching_1],
             # -listchannel
             ['-listchannel', '_list_channel', ret_val],
             ['-listchannel abc', '_list_channel', ret_val],
@@ -622,3 +635,42 @@ class TestService:
         self.service._list_channel(True, sender)
         for ch in test_channels:
             ok_(ch.lower() not in ' '.join(interfaces.get('test').msg_queue[sender]).lower())
+
+    def test_import(self):
+        sender = CommandSubmitter('test', 'tester')
+        short_test_channels = ['testch'+str(x) for x in range(3)]
+        long_test_channels = ['testch'+str(x) for x in range(10)]
+
+        self.service.setup(self.parser)
+        self.service.start()
+        threading.Event().wait(1)
+        self.service.stop()
+
+        # test small amount of followed channel
+        self.service._twitch.followed_ch_list = {'some_twitch_user': short_test_channels}
+        self.service._import(['some_twitch_user'], sender)
+        self.service._list_channel(True, sender)
+        for ch in short_test_channels:
+            ok_(ch.lower() in ' '.join(interfaces.get('test').msg_queue[sender]).lower())
+        interfaces.get('test').reset()
+        self.service._unsub_all(True, sender)
+
+        # test large amount of followed channel
+        self.service._twitch.followed_ch_list = {'some_twitch_user': long_test_channels}
+        self.service._import(['some_twitch_user'], sender)
+        self.service._list_channel(True, sender)
+        for ch in long_test_channels:
+            ok_(ch.lower() in ' '.join(interfaces.get('test').msg_queue[sender]).lower())
+        ok_('a while' in ' '.join(interfaces.get('test').msg_queue[sender]).lower())
+        interfaces.get('test').reset()
+        self.service._unsub_all(True, sender)
+
+        # test not found
+        self.service._twitch.followed_ch_list = {'some_twitch_user': long_test_channels}
+        self.service._import(['some_twitch_user2'], sender)
+        self.service._list_channel(True, sender)
+        for ch in long_test_channels:
+            ok_(ch.lower() not in ' '.join(interfaces.get('test').msg_queue[sender]).lower())
+        ok_('not found' in ' '.join(interfaces.get('test').msg_queue[sender]).lower())
+        interfaces.get('test').reset()
+        self.service._unsub_all(True, sender)

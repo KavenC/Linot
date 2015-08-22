@@ -118,6 +118,9 @@ class Service(ServiceBase):
                                help="Unsubscribe all channels in Linot. I won't send any notification to you anymore.")
         cmd_group.add_argument('-listchannel', action='store_true', func=self._list_channel,
                                help="List channels you've subscribed.")
+        cmd_group.add_argument('-import', nargs=1, func=self._import,
+                               help='Import the following list of a twitch user.\n'
+                               'ex: {} -import kaydada'.format(self.CMD))
 
         # below, admin only
         cmd_group.add_argument('-refresh', action='store_true', func=self._refresh,
@@ -159,6 +162,17 @@ class Service(ServiceBase):
         for subr in self._sublist:
             for ch in self._sublist[subr]:
                 self._channel_sub_count[ch] += 1
+
+    def _import(self, twitch_user, sender):
+        # get the following list of twitch_user and subscribe them for sender
+        user = twitch_user[0]
+        followed_channels = self._twitch.get_followed_channels(user)
+        if followed_channels is None:
+            sender.send_message('Twitch user: {} not found'.format(user))
+        else:
+            if len(followed_channels) > 8:
+                sender.send_message('Number of followed channels is more than 8. It may take a while to process.')
+            self._subscribe(followed_channels, sender)
 
     def _unsub_all(self, value, sender):
         # unsubscribe all channels for sender
