@@ -253,6 +253,9 @@ class TestService:
         ok_(self.service.CMD == 'twitch')
 
     def test_setup_argument(self):
+        def set_matching_0(val, sender):
+            set_matching_0.ret = (len(val) == 0)
+
         def set_matching_1(val, sender):
             set_matching_1.ret = (set(val) == set(['test1']))
 
@@ -267,16 +270,16 @@ class TestService:
 
         # test argument and function relation
         test_list = [
-            # -subscribe
+            # -subscribe +
             ['-subscribe test1', '_subscribe', set_matching_1],
             ['-subscribe test1 test2', '_subscribe', set_matching_2],
-            # -unsubscribe
+            # -unsubscribe +
             ['-unsubscribe test1', '_unsubscribe', set_matching_1],
             ['-unsubscribe test1 test2', '_unsubscribe', set_matching_2],
             # -unsuball
             ['-unsuball', '_unsub_all', ret_val],
             ['-unsuball abc', '_unsub_all', ret_val],
-            # -subscribe
+            # -import
             ['-import test1', '_import', set_matching_1],
             # -listchannel
             ['-listchannel', '_list_channel', ret_val],
@@ -284,9 +287,10 @@ class TestService:
             # -refresh
             ['-refresh', '_refresh', ret_val],
             ['-refresh abc', '_refresh', ret_val],
-            # -listUsers
-            ['-listusers', '_list_users', ret_val],
-            ['-listusers abc', '_list_users', ret_val],
+            # -listusers *
+            ['-listusers', '_list_users', set_matching_0],
+            ['-listusers test1', '_list_users', set_matching_1],
+            ['-listusers test1 test2', '_list_users', set_matching_2],
         ]
 
         for test in test_list:
@@ -560,7 +564,8 @@ class TestService:
         self.service.stop()
 
         fake_sender = CommandSubmitter('test', 'test_admin')
-        self.service._list_users(True, fake_sender)
+        self.service._list_users([], fake_sender)
+
         # check there is a response to user
         ok_(len(''.join(interfaces.get('test').msg_queue[fake_sender])) > 0)
 
@@ -571,21 +576,37 @@ class TestService:
 
         # check admin only
         fake_sender = CommandSubmitter('test', 'fake_sender')
-        self.service._list_users(True, fake_sender)
+        self.service._list_users([], fake_sender)
         ok_('Channels' not in ''.join(interfaces.get('test').msg_queue[fake_sender]))
 
         fake_sender = CommandSubmitter('test', 'test_admin')
-        self.service._list_users(True, fake_sender)
+        self.service._list_users([], fake_sender)
 
         # check msg response
         ok_('fake_sender' in ''.join(interfaces.get('test').msg_queue[fake_sender]))
         ok_('fake_sender2' in ''.join(interfaces.get('test').msg_queue[fake_sender]))
-        for idx, msg in enumerate(interfaces.get('test').msg_queue[fake_sender]):
+        ok_('testch1' not in ''.join(interfaces.get('test').msg_queue[fake_sender]))
+        ok_('testch2' not in ''.join(interfaces.get('test').msg_queue[fake_sender]))
+
+        # test list single user, channels
+        interfaces.get('test').reset()
+        for index in range(2):
+            self.service._list_users([index], fake_sender)
+            msg = ' '.join(interfaces.get('test').msg_queue[fake_sender])
+
             if 'fake_sender' in msg:
                 ok_('testch1' in msg)
-            if 'fake_sender1' in msg:
+            elif 'fake_sender2' in msg:
                 ok_('testch2' in msg)
                 ok_('testch1' in msg)
+
+        # test list multiple user channels
+        interfaces.get('test').reset()
+        self.service._list_users(range(2), fake_sender)
+        ok_('fake_sender' in ''.join(interfaces.get('test').msg_queue[fake_sender]))
+        ok_('fake_sender2' in ''.join(interfaces.get('test').msg_queue[fake_sender]))
+        ok_('testch1' in ''.join(interfaces.get('test').msg_queue[fake_sender]))
+        ok_('testch2' in ''.join(interfaces.get('test').msg_queue[fake_sender]))
 
     def test_sub_by_url(self):
         sender = CommandSubmitter('test', 'sender')

@@ -125,7 +125,7 @@ class Service(ServiceBase):
         # below, admin only
         cmd_group.add_argument('-refresh', action='store_true', func=self._refresh,
                                help=argparse.SUPPRESS)
-        cmd_group.add_argument('-listusers', action='store_true', func=self._list_users,
+        cmd_group.add_argument('-listusers', nargs='*', func=self._list_users,
                                help=argparse.SUPPRESS)
         cmd_group.add_direct_command(self._sub_by_url, 'twitch\.tv/(\w+)[\s\t,]*', re.IGNORECASE)
 
@@ -271,18 +271,49 @@ class Service(ServiceBase):
             self._check_thread.refresh()
             sender.send_message('Done')
 
-    def _list_users(self, args, sender):
+    def _list_users(self, check_users, sender):
         # List all user who has subscription
         # <Admin only>
-        if sender.code == config['interface'][sender.interface_name]['admin_id']:
-            msg = io.StringIO()
-            for user in self._sublist:
-                print(unicode(user), file=msg)
-                print(u'Channels:', file=msg)
+        if sender.code != config['interface'][sender.interface_name]['admin_id']:
+            return
+
+        user_list = self._sublist.keys()
+        msg = io.StringIO()
+        if len(check_users) == 0:
+            # if no check_user list is inputed, list all user with sub count
+            for user_index, user in enumerate(user_list):
+                print(u'#{}) {}'.format(user_index, unicode(user)), file=msg)
+                print(u'Subscribed count: {}'.format(len(self._sublist[user])), file=msg)
+                print(u'----------------------------', file=msg)
+        else:
+            # list users sub channel list
+            not_found = []
+            for user_index in check_users:
+                try:
+                    index = int(user_index)
+                    user = user_list[index]
+                except (ValueError, IndexError):
+                    not_found.append(user_index)
+                    continue
+
+                if user not in self._sublist:
+                    not_found.append(user_index)
+                    continue
+
+                print(u'#{}) {}'.format(user_index, unicode(user)), file=msg)
+                print(u'- Subscribed Channels: ', file=msg)
                 for ch in self._sublist[user]:
                     print(unicode(ch), end=u', ', file=msg)
                 print(u'', file=msg)
+                print(u'- Total Count: {}'.format(len(self._sublist[user])), file=msg)
                 print(u'----------------------------', file=msg)
-            print(u'Done', file=msg)  # make sure we are sending something to user
-            sender.send_message(msg.getvalue())
+
+            if len(not_found) > 0:
+                print(u'Not found: ', end=u'', file=msg)
+                for na in not_found:
+                    print(unicode(na), end=u', ', file=msg)
+                print(u'', file=msg)
+
+        print(u'Done', file=msg)  # make sure we are sending something to user
+        sender.send_message(msg.getvalue())
         return
