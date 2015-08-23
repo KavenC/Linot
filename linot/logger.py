@@ -13,12 +13,12 @@ config = {
         },
         'file': {
             'level': logging.DEBUG,
-            'class': 'logging.handlers.RotatingFileHandler',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
             'filename': 'linot.log',
-            'maxBytes': 32 * 1024,
-            'backupCount': 2,
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 3,
             'formatter': 'verbose',
-            'mode': 'w+',
         },
     },
     'formatters': {
