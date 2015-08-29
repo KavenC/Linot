@@ -5,6 +5,11 @@ Linot is a chat bot for [LINE](http://line.me/)&trade; App. It provides services
 
 Contact: leave message on gitter or [twitter@nevak](https://twitter.com/nevak)
 
+## Update
+**2015-08-29** Python LINE API package has been pulled down from Github by official request from Naver. It should be a clear sign that the owner of LINE (a.k.a Naver Corps.) is not allowing custom LINE chat bot being made and run. In response to current situation, I decide to halt Linot development until I find another communication interface (perhaps Whatsapp?). 
+
+Any code contributions are still always welcomed. 
+
 ## Services
 ###  TwitchNotifier
 TwitchNotifier let user subscribe twitch channels. When the subscribed channels goes live, Linot sends a LINE message to the subscribers with the channel infomation.
